@@ -76,12 +76,7 @@ npm start
 
 Ladda ner senaste `.dmg` från [Releases](https://github.com/Gnossan/aiuda-puml/releases).
 
-Appen är inte kodsignerad. macOS visar en Gatekeeper-varning vid första starten.
-**Lösning:** högerklicka på appen → Öppna, eller kör en gång i terminalen:
-
-```bash
-xattr -cr "/Applications/AIuda PUML.app"
-```
+Appen är signerad och notariserad av Apple — öppnas utan varningar.
 
 ## Bygga distribuerbar app
 
