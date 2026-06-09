@@ -1,6 +1,6 @@
 "use strict";
 
-const { app, BrowserWindow, dialog } = require("electron");
+const { app, BrowserWindow, dialog, ipcMain } = require("electron");
 app.name = "AIuda PUML";
 const path        = require("path");
 const { spawn, fork } = require("child_process");
@@ -17,27 +17,33 @@ const PUML_JAR    = path.join(resDir, "plantuml.jar");
 const SERVER_JS   = path.join(__dirname, "src", "server.js");
 const INDEX_HTML  = path.join(__dirname, "src", "index.html");
 
-let picowebProc   = null;
 let serverProc    = null;
 let mainWindow    = null;
 
-// ── Starta PlantUML PicoWeb (port 8080) ──
-function startPicoweb() {
+// ── IPC: rendera PlantUML → SVG via pipe (ingen server behövs) ──
+ipcMain.handle("rendera-puml", (_händelse, källkod) => {
     if (!fs.existsSync(JAVA_BIN)) {
-        dialog.showErrorBox(
-            "Java saknas",
-            `Kunde inte hitta Java-runtime på:\n${JAVA_BIN}\n\nKör scripts/build-jre.sh för att bygga den inbundlade JRE:n.`
-        );
-        return;
+        return Promise.reject(new Error("Java-runtime saknas — kör scripts/build-jre.sh"));
     }
-    picowebProc = spawn(JAVA_BIN, ["-jar", PUML_JAR, "-picoweb:8080"], {
-        stdio: "ignore",
-        detached: false,
+    return new Promise((lös, förkasta) => {
+        const proc = spawn(
+            JAVA_BIN,
+            ["-Djava.awt.headless=true", "-jar", PUML_JAR, "-pipe", "-tsvg"],
+            { stdio: ["pipe", "pipe", "pipe"] }
+        );
+        let svg = "";
+        let err = "";
+        proc.stdout.on("data", (del) => { svg += del; });
+        proc.stderr.on("data", (del) => { err += del; });
+        proc.on("close", (kod) => {
+            if (svg.includes("<svg")) lös(svg);
+            else förkasta(new Error(err.trim() || `PlantUML exit ${kod}`));
+        });
+        proc.on("error", förkasta);
+        proc.stdin.write(källkod, "utf8");
+        proc.stdin.end();
     });
-    picowebProc.on("error", (err) =>
-        console.error("[picoweb] Startfel:", err.message)
-    );
-}
+});
 
 // ── Starta konverterings- och AI-server (port 8090) ──
 function startKonverterServer() {
@@ -80,8 +86,7 @@ function createWindow() {
 
 // ── Stäng barnprocesser prydligt ──
 function stängAllt() {
-    if (picowebProc) { picowebProc.kill(); picowebProc = null; }
-    if (serverProc)  { serverProc.kill();  serverProc  = null; }
+    if (serverProc) { serverProc.kill(); serverProc = null; }
 }
 
 // ── Vänta tills en port svarar (max maxMs ms) ──
@@ -107,14 +112,10 @@ function väntatillPort(port, maxMs = 15000) {
 
 // ── App-livscykel ──
 app.whenReady().then(async () => {
-    startPicoweb();
     startKonverterServer();
 
-    // Vänta tills båda servrarna faktiskt lyssnar innan fönstret öppnas
-    await Promise.all([
-        väntatillPort(8080, 15000),
-        väntatillPort(8090, 10000),
-    ]);
+    // Vänta tills konverteringsservern lyssnar innan fönstret öppnas
+    await väntatillPort(8090, 10000);
 
     createWindow();
 

@@ -6,9 +6,8 @@
 // deflate+specialbase64-variant — det ger samma resultat utan att vi
 // behöver dra in ett externt komprimeringsbibliotek (t.ex. pako).
 
-const PICOWEB_BAS = "http://localhost:8080";
 // Lokal konverteringsserver — separat litet Node-API som kör vår egen PUML→drawio-pipeline.
-// Helt frikopplad från picoweb-servern (som bara renderar bilder).
+// Förhandsgranskning sker via window.aiuda.renderaPuml() (IPC → main-processen → Java pipe).
 const KONVERTERING_BAS = "http://localhost:8090";
 
 // Interna typnycklar (speglar konvertera.js KÄNDA_TYPER) — används i typ-dialogen.
@@ -52,14 +51,6 @@ let senasteFilnamn = "diagram";
 // PlantUML-kodning (hex, ingen komprimering behövs)
 // ----------------------------------------------------------------------
 
-function textTillHex(text) {
-    const bytes = new TextEncoder().encode(text);
-    let hex = "";
-    for (const byte of bytes) {
-        hex += byte.toString(16).padStart(2, "0");
-    }
-    return hex;
-}
 
 // ----------------------------------------------------------------------
 // Syntax-highlighting — enkel regexbaserad tokenisering.
@@ -183,19 +174,14 @@ async function rendera() {
         return;
     }
 
-    const url = `${PICOWEB_BAS}/svg/~h${textTillHex(text)}`;
     sättStatus("renderar …");
 
     try {
-        const svar = await fetch(url);
-        if (!svar.ok) {
-            sättStatus(`PlantUML-serverfel (${svar.status}) — starta om appen`, "fel");
-            return;
-        }
+        const svg = await window.aiuda.renderaPuml(text);
+
         const härlettNamn = härledFilnamnFrånTitel(text);
         if (härlettNamn) senasteFilnamn = härlettNamn;
 
-        const svg = await svar.text();
         const blob = new Blob([svg], { type: "image/svg+xml" });
         const objektUrl = URL.createObjectURL(blob);
 
@@ -208,13 +194,10 @@ async function rendera() {
         const ärFel = /An error has occured|Syntax Error|Cannot find/i.test(svg);
         sättStatus(ärFel ? "PlantUML hittade ett fel i koden" : "uppdaterad", ärFel ? "fel" : "ok");
 
-        // Exportknapparna är användbara så fort vi har en SVG i handen —
-        // även om PlantUML råkade rendera ett felmeddelande som bild
-        // (det är fortfarande en giltig SVG att titta på/spara).
         senasteSvg = svg;
         sättExportknapparAktiva(true);
     } catch (fel) {
-        sättStatus("kan inte nå PlantUML-servern — starta om appen", "fel");
+        sättStatus(`renderingsfel: ${fel.message}`, "fel");
     }
 }
 
