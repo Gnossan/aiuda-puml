@@ -27,5 +27,4 @@ jobs:
       - name: Bygg och publicera release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          CSC_IDENTITY_AUTO_DISCOVERY: false   # osignerat bygge — se issue #4
         run: npm run dist

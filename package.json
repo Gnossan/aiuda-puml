@@ -21,7 +21,9 @@
     "productName": "AIuda PUML",
     "mac": {
       "category": "public.app-category.developer-tools",
-      "icon": "resources/icon.icns"
+      "icon": "resources/icon.icns",
+      "identity": null,
+      "sign": "-"
     },
     "extraResources": [
       {
