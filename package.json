@@ -39,7 +39,9 @@
     "files": [
       "main.js",
       "preload.js",
-      "src/**/*"
+      "src/**/*",
+      "!src/.env",
+      "!src/.env.local"
     ],
     "publish": {
       "provider": "github",

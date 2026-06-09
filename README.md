@@ -72,13 +72,27 @@ ANTHROPIC_API_KEY=sk-ant-...
 npm start
 ```
 
-## Bygga distribuerbar app
+## Installation från DMG
+
+Ladda ner senaste `.dmg` från [Releases](https://github.com/Gnossan/aiuda-puml/releases).
+
+Appen är inte kodsignerad. macOS visar en Gatekeeper-varning vid första starten.
+**Lösning:** högerklicka på appen → Öppna, eller kör en gång i terminalen:
 
 ```bash
-npm run dist
+xattr -cr "/Applications/AIuda PUML.app"
 ```
 
-Bygger `.dmg` och `.zip` i `dist/`.
+## Bygga distribuerbar app
+
+Releasebyggen sker automatiskt via GitHub Actions när en versionstagg pushas:
+
+```bash
+git tag v1.2.0
+git push origin v1.2.0
+```
+
+`.dmg` och `.zip` laddas upp till GitHub Releases av CI.
 
 ## Projektstruktur
 
