@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// AIuda PUML™ — lokal konverterings- och AI-server
+// AIuda™ PUML — lokal konverterings- och AI-server
 //
 // Endpoints:
 //   POST /konvertera   — PlantUML → draw.io XML
@@ -209,7 +209,7 @@ const server = http.createServer(async (begäran, svar) => {
             fs.copyFileSync(exempelStig, envStig);
         } else if (!fs.existsSync(envStig)) {
             fs.writeFileSync(envStig,
-                "# AIuda PUML™ — API-nycklar\n" +
+                "# AIuda™ PUML — API-nycklar\n" +
                 "# Fyll i dina nycklar och starta om servern.\n\n" +
                 "ANTHROPIC_API_KEY=sk-ant-\n\n" +
                 "# OPENAI_API_KEY=sk-\n",

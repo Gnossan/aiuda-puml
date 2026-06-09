@@ -1,4 +1,4 @@
-# AIuda PUML™
+# AIuda™ PUML
 
 PlantUML-editor som skrivbordsapp med inbyggd AI-assistent och export till draw.io.
 
