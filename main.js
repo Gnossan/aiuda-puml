@@ -1,6 +1,7 @@
 "use strict";
 
 const { app, BrowserWindow, dialog } = require("electron");
+app.name = "AIuda PUML";
 const path        = require("path");
 const { spawn, fork } = require("child_process");
 const fs          = require("fs");
@@ -83,13 +84,39 @@ function stängAllt() {
     if (serverProc)  { serverProc.kill();  serverProc  = null; }
 }
 
+// ── Vänta tills en port svarar (max maxMs ms) ──
+function väntatillPort(port, maxMs = 15000) {
+    return new Promise((lös) => {
+        const start = Date.now();
+        const net = require("net");
+        function försök() {
+            const sock = new net.Socket();
+            sock.setTimeout(300);
+            sock.on("connect", () => { sock.destroy(); lös(true); });
+            sock.on("error",   () => { sock.destroy(); retry(); });
+            sock.on("timeout", () => { sock.destroy(); retry(); });
+            sock.connect(port, "127.0.0.1");
+        }
+        function retry() {
+            if (Date.now() - start > maxMs) { lös(false); return; }
+            setTimeout(försök, 300);
+        }
+        försök();
+    });
+}
+
 // ── App-livscykel ──
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
     startPicoweb();
     startKonverterServer();
 
-    // Ge Java lite tid att starta innan fönstret öppnas
-    setTimeout(createWindow, 1200);
+    // Vänta tills båda servrarna faktiskt lyssnar innan fönstret öppnas
+    await Promise.all([
+        väntatillPort(8080, 15000),
+        väntatillPort(8090, 10000),
+    ]);
+
+    createWindow();
 
     app.on("activate", () => {
         if (BrowserWindow.getAllWindows().length === 0) createWindow();

@@ -7,8 +7,7 @@
 // behöver dra in ett externt komprimeringsbibliotek (t.ex. pako).
 
 const PICOWEB_BAS = "http://localhost:8080";
-// Lokal konverteringsserver (puml-till-drawio/server.js, se start-server.sh)
-// — separat litet Node-API som kör vår egen PUML→drawio-pipeline.
+// Lokal konverteringsserver — separat litet Node-API som kör vår egen PUML→drawio-pipeline.
 // Helt frikopplad från picoweb-servern (som bara renderar bilder).
 const KONVERTERING_BAS = "http://localhost:8090";
 
@@ -190,7 +189,7 @@ async function rendera() {
     try {
         const svar = await fetch(url);
         if (!svar.ok) {
-            sättStatus(`serverfel (${svar.status}) — körs picoweb-servern? Se start.sh`, "fel");
+            sättStatus(`PlantUML-serverfel (${svar.status}) — starta om appen`, "fel");
             return;
         }
         const härlettNamn = härledFilnamnFrånTitel(text);
@@ -215,7 +214,7 @@ async function rendera() {
         senasteSvg = svg;
         sättExportknapparAktiva(true);
     } catch (fel) {
-        sättStatus("kan inte nå picoweb-servern — kör start.sh i terminalen", "fel");
+        sättStatus("kan inte nå PlantUML-servern — starta om appen", "fel");
     }
 }
 
@@ -276,7 +275,7 @@ function exporteraPng() {
 
 // ----------------------------------------------------------------------
 // Konvertera till drawio — pratar med vår egen lokala konverteringsserver
-// (puml-till-drawio/server.js, separat liten Node-process, se start-server.sh).
+// (src/server.js, startas automatiskt av Electron-appen).
 //
 // Pipelinen bygger ÄKTA, redigerbara drawio-element (inte en bild) genom att
 // tolka PUML-källkoden direkt — men bara för de diagramtyper vi hittills
@@ -398,7 +397,7 @@ async function konverteraTillDrawio() {
             );
         }
     } catch (fel) {
-        sättStatus("kan inte nå konverteringsservern — kör start-server.sh i terminalen (puml-till-drawio)", "fel");
+        sättStatus("kan inte nå konverteringsservern — starta om appen", "fel");
     } finally {
         konverteraDrawioKnapp.disabled = false;
     }
