@@ -10,6 +10,8 @@ jobs:
     runs-on: macos-14        # arm64-runner — matchar vårt distributionsformat
     permissions:
       contents: write        # krävs för att skapa/uppdatera GitHub Releases
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
     steps:
       - name: Checka ut kod
