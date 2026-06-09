@@ -5,11 +5,28 @@ const { contextBridge, ipcRenderer } = require("electron");
 // Inga Node-API:er läcker in i renderer-kontexten.
 contextBridge.exposeInMainWorld("aiuda", {
     // Renderar PlantUML-källkod till SVG via inbundlad Java (pipe-läge).
-    renderaPuml: (källkod) => ipcRenderer.invoke("rendera-puml", källkod),
+    renderaPuml: (källkod) =>
+        ipcRenderer.invoke("rendera-puml", källkod),
+
+    // Konverterar PUML-källkod till draw.io XML.
+    konvertera: (källkod, typ) =>
+        ipcRenderer.invoke("konvertera", { källkod, typ: typ || null }),
+
+    // Returnerar { anthropic: bool, openai: bool } — vilka nycklar finns?
+    aiStatus: () =>
+        ipcRenderer.invoke("ai-status"),
+
+    // Skickar ett AI-anrop till Anthropic eller OpenAI.
+    ai: (provider, model, messages) =>
+        ipcRenderer.invoke("ai", { provider, model, messages }),
+
+    // Öppnar .env-filen i systemets texteditor.
+    oppnaEnv: () =>
+        ipcRenderer.invoke("oppna-env"),
 
     // Menyhändelser från main-processen → renderer.
-    onMeny:      (cb) => ipcRenderer.on("meny",           (_, h) => cb(h)),
-    onÖppnaFil:  (cb) => ipcRenderer.on("meny-öppna-fil", (_, d) => cb(d)),
+    onMeny:     (cb) => ipcRenderer.on("meny",           (_, h) => cb(h)),
+    onÖppnaFil: (cb) => ipcRenderer.on("meny-öppna-fil", (_, d) => cb(d)),
 
     // Spara som: renderer skickar innehåll, main visar dialog och skriver.
     sparaSom: (innehåll, föreslagetNamn) =>

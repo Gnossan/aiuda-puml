@@ -1,14 +1,6 @@
-// app.js — kopplar ihop textarean med PlantUMLs lokala picoweb-server,
-// plus syntax-highlighting (overlay-teknik), export (SVG/PNG) och
-// spara/öppna av .puml-filer.
-//
-// Vi använder PlantUMLs hex-kodning (~h<hex>) istället för deras
-// deflate+specialbase64-variant — det ger samma resultat utan att vi
-// behöver dra in ett externt komprimeringsbibliotek (t.ex. pako).
-
-// Lokal konverteringsserver — separat litet Node-API som kör vår egen PUML→drawio-pipeline.
-// Förhandsgranskning sker via window.aiuda.renderaPuml() (IPC → main-processen → Java pipe).
-const KONVERTERING_BAS = "http://localhost:8090";
+// app.js — kopplar ihop textarean med PlantUML och AI via Electron IPC.
+// Förhandsgranskning, konvertering och AI-anrop sker via window.aiuda.*
+// (contextBridge → IPC → main-processen) — ingen separat server behövs.
 
 // Interna typnycklar (speglar konvertera.js KÄNDA_TYPER) — används i typ-dialogen.
 const DIAGRAM_TYPER = [
@@ -27,9 +19,6 @@ const bildEl = document.getElementById("bild");
 const statusEl = document.getElementById("status");
 const filInputEl = document.getElementById("fil-input");
 
-const exporteraSvgKnapp = document.getElementById("exportera-svg-knapp");
-const exporteraPngKnapp = document.getElementById("exportera-png-knapp");
-const konverteraDrawioKnapp = document.getElementById("konvertera-drawio-knapp");
 
 const förhandsvisningEl = document.querySelector(".förhandsvisning");
 const zoomaUtKnapp = document.getElementById("zooma-ut-knapp");
@@ -157,17 +146,11 @@ function schemaläggRendering() {
     timer = setTimeout(rendera, FÖRDRÖJNING_MS);
 }
 
-function sättExportknapparAktiva(aktiva) {
-    exporteraSvgKnapp.disabled = !aktiva;
-    exporteraPngKnapp.disabled = !aktiva;
-}
-
 async function rendera() {
     const text = kodEl.value.trim();
     if (!text) {
         bildEl.removeAttribute("src");
         senasteSvg = null;
-        sättExportknapparAktiva(false);
         sättStatus("tom — skriv lite PlantUML-kod");
         return;
     }
@@ -193,7 +176,6 @@ async function rendera() {
         sättStatus(ärFel ? "PlantUML hittade ett fel i koden" : "uppdaterad", ärFel ? "fel" : "ok");
 
         senasteSvg = svg;
-        sättExportknapparAktiva(true);
     } catch (fel) {
         sättStatus(`renderingsfel: ${fel.message}`, "fel");
     }
@@ -310,33 +292,28 @@ function visaTypDialog(gissning) {
     });
 }
 
+let konverterar = false;
+
 async function konverteraTillDrawio() {
+    if (konverterar) return;
     const text = kodEl.value.trim();
     if (!text) {
         sättStatus("inget att konvertera — skriv lite PlantUML-kod först", "fel");
         return;
     }
 
-    konverteraDrawioKnapp.disabled = true;
+    konverterar = true;
     sättStatus("konverterar till drawio …");
 
     try {
         async function hämtaKonvertering(typ) {
-            const url = typ
-                ? `${KONVERTERING_BAS}/konvertera?typ=${encodeURIComponent(typ)}`
-                : `${KONVERTERING_BAS}/konvertera`;
-            const svar = await fetch(url, {
-                method:  "POST",
-                headers: { "Content-Type": "text/plain; charset=utf-8" },
-                body:    text,
-            });
-            return { svar, data: await svar.json() };
+            return window.aiuda.konvertera(text, typ || null);
         }
 
-        let { svar, data } = await hämtaKonvertering(null);
+        let data = await hämtaKonvertering(null);
 
-        if (!svar.ok || data.fel) {
-            sättStatus(`konverteringsfel: ${data.fel || svar.status}`, "fel");
+        if (data.fel) {
+            sättStatus(`konverteringsfel: ${data.fel}`, "fel");
             return;
         }
 
@@ -351,11 +328,11 @@ async function konverteraTillDrawio() {
             if (valdTyp !== data.typ) {
                 sättStatus("konverterar med vald typ …");
                 const omkonv = await hämtaKonvertering(valdTyp);
-                if (!omkonv.svar.ok || omkonv.data.fel) {
-                    sättStatus(`konverteringsfel: ${omkonv.data.fel || omkonv.svar.status}`, "fel");
+                if (omkonv.fel) {
+                    sättStatus(`konverteringsfel: ${omkonv.fel}`, "fel");
                     return;
                 }
-                data = omkonv.data;
+                data = omkonv;
             }
         }
 
@@ -378,9 +355,9 @@ async function konverteraTillDrawio() {
             );
         }
     } catch (fel) {
-        sättStatus("kan inte nå konverteringsservern — starta om appen", "fel");
+        sättStatus(`konverteringsfel: ${fel.message}`, "fel");
     } finally {
-        konverteraDrawioKnapp.disabled = false;
+        konverterar = false;
     }
 }
 
@@ -584,9 +561,6 @@ kodEl.addEventListener("input", () => {
 kodEl.addEventListener("scroll", synkaScroll);
 
 filInputEl.addEventListener("change", hanteraFilval);
-exporteraSvgKnapp.addEventListener("click", exporteraSvg);
-exporteraPngKnapp.addEventListener("click", exporteraPng);
-konverteraDrawioKnapp.addEventListener("click", konverteraTillDrawio);
 
 // ----------------------------------------------------------------------
 // Diagram-mallar
@@ -951,6 +925,10 @@ window.aiuda.onMeny(async (händelse) => {
             break;
         }
 
+        case "export-svg":    exporteraSvg();          break;
+        case "export-png":    exporteraPng();          break;
+        case "export-drawio": konverteraTillDrawio();  break;
+
         default:
             if (händelse.startsWith("mall:")) laddaMall(händelse.slice(5));
             break;
@@ -1117,12 +1095,10 @@ function uppdateraModellLista() {
 }
 aiProviderEl.addEventListener("change", uppdateraModellLista);
 
-// ── Kolla nyckelstatus från servern och uppdatera UI ──
+// ── Kolla nyckelstatus via IPC och uppdatera UI ──
 async function uppdateraNyckelStatus() {
     try {
-        const svar = await fetch(`${KONVERTERING_BAS}/ai-status`);
-        if (!svar.ok) throw new Error();
-        const data = await svar.json();
+        const data = await window.aiuda.aiStatus();
         const inst = läsAiInst();
         const provider = inst.provider || "anthropic";
         const harNyckel = provider === "openai" ? data.openai : data.anthropic;
@@ -1134,7 +1110,7 @@ async function uppdateraNyckelStatus() {
         return harNyckel;
     } catch {
         if (aiNyckelStatusEl) {
-            aiNyckelStatusEl.innerHTML = `<span style="color:#e07070;">✗ Servern svarar inte</span>`;
+            aiNyckelStatusEl.innerHTML = `<span style="color:#e07070;">✗ Kunde inte läsa nyckelstatus</span>`;
         }
         return false;
     }
@@ -1162,9 +1138,7 @@ aiSparaInstEl.addEventListener("click", () => {
 // ── Öppna .env i texteditor ──
 document.getElementById("ai-oppna-env").addEventListener("click", async () => {
     try {
-        const svar = await fetch(`${KONVERTERING_BAS}/open-env`);
-        const data = await svar.json();
-        if (!svar.ok) throw new Error(data.fel || "Okänt fel");
+        await window.aiuda.oppnaEnv();
         // Kort feedback — blinkar knappetiketten
         const knapp = document.getElementById("ai-oppna-env");
         const orig  = knapp.textContent;
@@ -1314,20 +1288,15 @@ async function skickaAiMeddelande(prompt) {
     aiSkickaEl.disabled = true;
 
     try {
-        const svar = await fetch(`${KONVERTERING_BAS}/ai`, {
-            method:  "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                provider: inst.provider || "anthropic",
-                model:    inst.modell  || null,
-                messages: aiChatt.map((m) => ({ role: m.role, content: m.content })),
-            }),
-        });
+        const data = await window.aiuda.ai(
+            inst.provider || "anthropic",
+            inst.modell   || null,
+            aiChatt.map((m) => ({ role: m.role, content: m.content }))
+        );
 
-        const data = await svar.json();
         ladarEl.remove();
 
-        if (!svar.ok || data.fel) {
+        if (data.fel) {
             aiChatt.pop(); // Ta bort användarmeddelandet
             renderaChatt();
             // Visa fel som ett assistent-meddelande
