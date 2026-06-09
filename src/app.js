@@ -917,32 +917,14 @@ document.getElementById("stäng-knapp").addEventListener("click", () => {
     rensaChatt();
 });
 
-// ── Mall-dialog (Edit → Mall… / Cmd+T) ──
-const mallDialogEl = document.getElementById("mall-dialog");
-
-function visaMallDialog() {
-    mallDialogEl.showModal();
+// ── Ladda mall (anropas från meny-hanteraren) ──
+function laddaMall(typ) {
+    if (kodEl.value.trim() && !confirm("Ersätta nuvarande kod med mallen?")) return;
+    kodEl.value = MALLAR[typ] || "";
+    uppdateraHighlight();
+    schemaläggRendering();
+    sparaTillLagring();
 }
-
-mallDialogEl.querySelector("#mall-dialog-avbryt").addEventListener("click", () => {
-    mallDialogEl.close();
-});
-mallDialogEl.addEventListener("click", (e) => {
-    // Stäng om man klickar på bakgrunden
-    if (e.target === mallDialogEl) mallDialogEl.close();
-});
-
-mallDialogEl.querySelectorAll("[data-mall]").forEach((knapp) => {
-    knapp.addEventListener("click", () => {
-        const vald = knapp.dataset.mall;
-        mallDialogEl.close();
-        if (kodEl.value.trim() && !confirm("Ersätta nuvarande kod med mallen?")) return;
-        kodEl.value = MALLAR[vald] || "";
-        uppdateraHighlight();
-        schemaläggRendering();
-        sparaTillLagring();
-    });
-});
 
 // ── Menyhändelser från native-menyn (File / Edit) ──
 window.aiuda.onMeny(async (händelse) => {
@@ -969,8 +951,8 @@ window.aiuda.onMeny(async (händelse) => {
             break;
         }
 
-        case "mall":
-            visaMallDialog();
+        default:
+            if (händelse.startsWith("mall:")) laddaMall(händelse.slice(5));
             break;
     }
 });

@@ -458,44 +458,7 @@
     #typ-dialog-avbryt  { background: #2d2d2d; color: var(--text); }
     #typ-dialog-avbryt:hover { background: #3a2e20; }
 
-    /* ── Mall-dialog ── */
-    #mall-dialog {
-        background: var(--panel);
-        color: var(--text);
-        border: 1px solid var(--border);
-        border-radius: 8px;
-        padding: 20px 24px 16px;
-        min-width: 320px;
-        box-shadow: 0 8px 32px rgba(0,0,0,0.6);
-    }
-    #mall-dialog::backdrop { background: rgba(0,0,0,0.45); }
-    #mall-dialog h3 { margin: 0 0 16px; font-size: 13px; font-weight: 600; color: var(--accent); }
-    .mall-lista {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 6px;
-        margin-bottom: 14px;
-    }
-    .mall-lista button {
-        font-family: inherit;
-        font-size: 12px;
-        text-align: left;
-        padding: 7px 12px;
-        background: #211c14;
-        color: var(--text);
-        border: 1px solid var(--border);
-        border-radius: 5px;
-        cursor: pointer;
-        transition: background 0.1s, border-color 0.1s;
-    }
-    .mall-lista button:hover { background: #3a2e20; border-color: var(--accent); color: var(--accent); }
-    #mall-dialog-avbryt {
-        font-family: inherit; font-size: 12px;
-        padding: 6px 14px; border-radius: 5px;
-        border: 1px solid var(--border); cursor: pointer;
-        background: #2d2d2d; color: var(--text); float: right;
-    }
-    #mall-dialog-avbryt:hover { background: #3a2e20; }
+
 </style>
 </head>
 <body>
@@ -604,26 +567,6 @@
 
 <input type="file" id="fil-input" accept=".puml,.txt,.uml,.iuml" style="display:none">
 
-<dialog id="mall-dialog" aria-modal="true">
-    <h3>Välj mall</h3>
-    <div class="mall-lista">
-        <button data-mall="usecase">Use case</button>
-        <button data-mall="sekvens">Sekvens</button>
-        <button data-mall="klass">Klass</button>
-        <button data-mall="aktivitet">Aktivitet</button>
-        <button data-mall="komponent">Komponent</button>
-        <button data-mall="tillstånd">Tillstånd</button>
-        <button data-mall="er">ER</button>
-        <button data-mall="deployment">Deployment</button>
-        <button data-mall="objekt">Objekt</button>
-        <button data-mall="timing">Timing</button>
-        <button data-mall="mindmap">MindMap</button>
-        <button data-mall="wbs">WBS</button>
-        <button data-mall="network">Network</button>
-        <button data-mall="gantt">Gantt</button>
-    </div>
-    <button id="mall-dialog-avbryt">Avbryt</button>
-</dialog>
 
 <dialog id="typ-dialog" aria-modal="true" aria-labelledby="typ-dialog-rubrik">
     <h3 id="typ-dialog-rubrik">Okänd diagramtyp</h3>
