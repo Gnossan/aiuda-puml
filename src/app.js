@@ -27,8 +27,6 @@ const bildEl = document.getElementById("bild");
 const statusEl = document.getElementById("status");
 const filInputEl = document.getElementById("fil-input");
 
-const öppnaKnapp = document.getElementById("öppna-knapp");
-const sparaKnapp = document.getElementById("spara-knapp");
 const exporteraSvgKnapp = document.getElementById("exportera-svg-knapp");
 const exporteraPngKnapp = document.getElementById("exportera-png-knapp");
 const konverteraDrawioKnapp = document.getElementById("konvertera-drawio-knapp");
@@ -585,8 +583,6 @@ kodEl.addEventListener("input", () => {
 });
 kodEl.addEventListener("scroll", synkaScroll);
 
-öppnaKnapp.addEventListener("click", öppnaFrånFil);
-sparaKnapp.addEventListener("click", sparaTillFil);
 filInputEl.addEventListener("change", hanteraFilval);
 exporteraSvgKnapp.addEventListener("click", exporteraSvg);
 exporteraPngKnapp.addEventListener("click", exporteraPng);
@@ -911,17 +907,7 @@ cpu is Idle
 @enduml`,
 };
 
-// ── Nytt diagram ──
-document.getElementById("nytt-knapp").addEventListener("click", () => {
-    if (kodEl.value.trim() && !confirm("Skapa nytt diagram? Nuvarande kod och chatthistorik rensas.")) return;
-    kodEl.value = STARTKOD;
-    uppdateraHighlight();
-    schemaläggRendering();
-    sparaTillLagring();
-    rensaChatt();
-});
-
-// ── Stäng diagram ──
+// ── Stäng diagram (kvar som knapp i toolbar) ──
 document.getElementById("stäng-knapp").addEventListener("click", () => {
     if (kodEl.value.trim() && !confirm("Stäng och töm editorn? Chatthistoriken rensas.")) return;
     kodEl.value = "";
@@ -931,6 +917,7 @@ document.getElementById("stäng-knapp").addEventListener("click", () => {
     rensaChatt();
 });
 
+// ── Mall-väljare (dold select, triggas av Edit → Mall... / Cmd+T) ──
 const mallVäljarEl = document.getElementById("mall-väljare");
 mallVäljarEl.addEventListener("change", () => {
     const vald = mallVäljarEl.value;
@@ -944,6 +931,54 @@ mallVäljarEl.addEventListener("change", () => {
     uppdateraHighlight();
     schemaläggRendering();
     sparaTillLagring();
+});
+
+// ── Menyhändelser från native-menyn (File / Edit) ──
+window.aiuda.onMeny(async (händelse) => {
+    switch (händelse) {
+        case "nytt":
+            if (kodEl.value.trim() && !confirm("Skapa nytt diagram? Nuvarande kod och chatthistorik rensas.")) return;
+            kodEl.value = STARTKOD;
+            uppdateraHighlight();
+            schemaläggRendering();
+            sparaTillLagring();
+            rensaChatt();
+            break;
+
+        case "spara":
+            sparaTillFil();
+            break;
+
+        case "spara-som": {
+            const res = await window.aiuda.sparaSom(kodEl.value, senasteFilnamn);
+            if (res.sparad) {
+                senasteFilnamn = res.filnamn;
+                sättStatus(`sparad som ${res.filnamn}.puml`, "ok");
+            }
+            break;
+        }
+
+        case "mall":
+            mallVäljarEl.focus();
+            mallVäljarEl.size = mallVäljarEl.options.length;
+            mallVäljarEl.style.display = "";
+            mallVäljarEl.addEventListener("blur", () => {
+                mallVäljarEl.size = 0;
+                mallVäljarEl.style.display = "none";
+            }, { once: true });
+            break;
+    }
+});
+
+// ── Öppna fil via native dialog (skickas från main) ──
+window.aiuda.onÖppnaFil(({ innehåll, filnamn }) => {
+    kodEl.value = innehåll;
+    senasteFilnamn = filnamn;
+    uppdateraHighlight();
+    sparaTillLagring();
+    återställZoom();
+    rendera();
+    sättStatus(`öppnade ${filnamn}.puml`, "ok");
 });
 
 kodEl.value = läsFrånLagring() || STARTKOD;

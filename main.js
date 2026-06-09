@@ -1,6 +1,6 @@
 "use strict";
 
-const { app, BrowserWindow, dialog, ipcMain } = require("electron");
+const { app, BrowserWindow, dialog, ipcMain, Menu } = require("electron");
 app.name = "AIuda PUML";
 const path        = require("path");
 const { spawn, fork } = require("child_process");
@@ -62,6 +62,107 @@ function startKonverterServer() {
     );
 }
 
+// ── Hjälpfunktion: skicka menyhändelse till renderer ──
+function skickaMeny(händelse) {
+    mainWindow?.webContents.send("meny", händelse);
+}
+
+// ── Öppna fil via native dialog (hanteras i main) ──
+async function visaÖppnaDialog() {
+    const res = await dialog.showOpenDialog(mainWindow, {
+        title:      "Öppna PlantUML-fil",
+        filters:    [{ name: "PlantUML", extensions: ["puml", "pu", "txt"] }],
+        properties: ["openFile"],
+    });
+    if (res.canceled || !res.filePaths.length) return;
+    const stig    = res.filePaths[0];
+    const innehåll = fs.readFileSync(stig, "utf-8");
+    const filnamn  = path.basename(stig, path.extname(stig));
+    mainWindow?.webContents.send("meny-öppna-fil", { innehåll, filnamn });
+}
+
+// ── Spara som via native dialog (IPC-anrop från renderer) ──
+ipcMain.handle("spara-som", async (_händelse, { innehåll, föreslagetNamn }) => {
+    const res = await dialog.showSaveDialog(mainWindow, {
+        title:          "Spara som",
+        defaultPath:    `${föreslagetNamn || "diagram"}.puml`,
+        filters:        [{ name: "PlantUML", extensions: ["puml"] }],
+    });
+    if (res.canceled || !res.filePath) return { sparad: false };
+    fs.writeFileSync(res.filePath, innehåll, "utf-8");
+    const filnamn = path.basename(res.filePath, path.extname(res.filePath));
+    return { sparad: true, filnamn };
+});
+
+// ── Bygg native-meny ──
+function byggMeny() {
+    const isMac = process.platform === "darwin";
+    const mall  = Menu.buildFromTemplate([
+        ...(isMac ? [{
+            label: app.name,
+            submenu: [
+                { role: "about" },
+                { type: "separator" },
+                { role: "services" },
+                { type: "separator" },
+                { role: "hide" },
+                { role: "hideOthers" },
+                { role: "unhide" },
+                { type: "separator" },
+                { role: "quit" },
+            ],
+        }] : []),
+        {
+            label: "File",
+            submenu: [
+                { label: "Nytt",        accelerator: "CmdOrCtrl+N",       click: () => skickaMeny("nytt")      },
+                { type:  "separator" },
+                { label: "Öppna …",     accelerator: "CmdOrCtrl+O",       click: visaÖppnaDialog               },
+                { label: "Spara",       accelerator: "CmdOrCtrl+S",       click: () => skickaMeny("spara")     },
+                { label: "Spara som …", accelerator: "CmdOrCtrl+Shift+S", click: () => skickaMeny("spara-som") },
+                ...(!isMac ? [{ type: "separator" }, { role: "quit" }] : []),
+            ],
+        },
+        {
+            label: "Edit",
+            submenu: [
+                { role: "undo"      },
+                { role: "redo"      },
+                { type: "separator" },
+                { role: "cut"       },
+                { role: "copy"      },
+                { role: "paste"     },
+                { role: "selectAll" },
+                { type: "separator" },
+                { label: "Mall …", accelerator: "CmdOrCtrl+T", click: () => skickaMeny("mall") },
+            ],
+        },
+        {
+            label: "View",
+            submenu: [
+                { role: "reload"         },
+                { role: "forceReload"    },
+                { role: "toggleDevTools" },
+                { type: "separator"      },
+                { role: "resetZoom"      },
+                { role: "zoomIn"         },
+                { role: "zoomOut"        },
+                { type: "separator"      },
+                { role: "togglefullscreen" },
+            ],
+        },
+        {
+            label: "Window",
+            submenu: [
+                { role: "minimize" },
+                { role: "zoom"     },
+                ...(isMac ? [{ type: "separator" }, { role: "front" }] : []),
+            ],
+        },
+    ]);
+    Menu.setApplicationMenu(mall);
+}
+
 // ── Skapa huvudfönstret ──
 function createWindow() {
     mainWindow = new BrowserWindow({
@@ -112,6 +213,7 @@ function väntatillPort(port, maxMs = 15000) {
 
 // ── App-livscykel ──
 app.whenReady().then(async () => {
+    byggMeny();
     startKonverterServer();
 
     // Vänta tills konverteringsservern lyssnar innan fönstret öppnas

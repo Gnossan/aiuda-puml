@@ -528,7 +528,9 @@
             <span class="vänster">
                 <span>PlantUML-källkod</span>
                 <span class="verktygsrad">
-                    <select id="mall-väljare" title="Ladda in en mall för vald diagramtyp">
+                    <button id="stäng-knapp" title="Stäng och töm editorn">Stäng</button>
+                    <!-- mall-väljare: dold select används av Edit → Mall... (Cmd+T) -->
+                    <select id="mall-väljare" style="display:none">
                         <option value="">Mall …</option>
                         <option value="usecase">Use case</option>
                         <option value="sekvens">Sekvens</option>
@@ -545,10 +547,6 @@
                         <option value="network">Network</option>
                         <option value="gantt">Gantt</option>
                     </select>
-                    <button id="nytt-knapp"  title="Nytt tomt diagram">Nytt</button>
-                    <button id="stäng-knapp" title="Stäng och töm editorn">Stäng</button>
-                    <button id="öppna-knapp" title="Öppna en .puml-fil från disk">Öppna …</button>
-                    <button id="spara-knapp" title="Spara koden som en .puml-fil">Spara</button>
                 </span>
             </span>
             <span id="status" class="status">väntar …</span>
