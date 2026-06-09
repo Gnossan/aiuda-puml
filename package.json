@@ -3,6 +3,8 @@
   "productName": "AIuda PUML",
   "version": "1.1.0",
   "description": "PlantUML-editor med AI-stöd och draw.io-export",
+  "license": "GPL-2.0-only",
+  "author": "Tomas Gnossa",
   "main": "main.js",
   "scripts": {
     "start": "electron .",

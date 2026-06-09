@@ -2,29 +2,35 @@
 
 PlantUML-editor som skrivbordsapp med inbyggd AI-assistent och export till draw.io.
 
+![Version](https://img.shields.io/badge/version-1.1.0-blue)
 ![Electron](https://img.shields.io/badge/Electron-35-47848F?logo=electron)
 ![PlantUML](https://img.shields.io/badge/PlantUML-bundled-orange)
-![License](https://img.shields.io/badge/license-MIT-green)
+![License](https://img.shields.io/badge/license-GPL%20v2-green)
 
 ## Funktioner
 
 - **14 diagramtyper** — Use case, Sekvens, Klass, Aktivitet, Komponent, Tillstånd, ER, Deployment, Objekt, Timing, MindMap, WBS, Network (nwdiag), Gantt
-- **Live-förhandsgranskning** via inbundlad PlantUML (ingen internetuppkoppling krävs)
-- **Export till draw.io** — konverterar PUML-källa till draw.io XML
-- **AI-assistent** — chatt med Claude eller GPT direkt i editorn; kan generera, förklara och förbättra diagram
-- **Inbundlad Java-runtime** — användaren behöver inte installera Java separat
+- **Live-förhandsgranskning** via inbundlad PlantUML — ingen internetuppkoppling krävs för rendering
+- **Export** — SVG, PNG och draw.io XML (File → Export …)
+- **AI-assistent** — chatt med Claude eller GPT direkt i editorn; generera, förklara och förbättra diagram
+- **Inbundlad Java-runtime** — ingen separat Java-installation krävs
+- **Auto-update** — appen söker automatiskt efter nya versioner via GitHub Releases
+
+## Arkitektur
+
+Appen körs helt lokalt utan externa beroenden vid runtime:
+
+- **PlantUML-rendering** sker via Java-pipe direkt i Electron-processen
+- **AI-anrop** proxyas till Anthropic / OpenAI via Electron IPC — API-nycklar stannar lokalt i `.env`
+- **draw.io-konvertering** tolkar PUML-källkod direkt, ingen server behövs
 
 ## Krav
 
-- macOS (Apple Silicon eller Intel)
-- [Node.js](https://nodejs.org) 18+
-- [Java JDK 21+](https://formulae.brew.sh/formula/openjdk) — endast för att bygga den inbundlade JRE:n (engångssteg)
+- macOS 10.12+ (Apple Silicon eller Intel)
+- [Node.js](https://nodejs.org) 18+ — för att köra från källkod
+- Java JDK 21+ — endast för att bygga den inbundlade JRE:n (engångssteg för utvecklare)
 
-```bash
-brew install node openjdk@21
-```
-
-## Installation
+## Installation från källkod
 
 ```bash
 git clone https://github.com/Gnossan/aiuda-puml.git
@@ -32,25 +38,32 @@ cd aiuda-puml
 npm install
 ```
 
-### Bygg inbundlad JRE (engångssteg)
+`npm install` laddar automatiskt ner en färdigbyggd JRE (~29 MB) från GitHub Releases.
 
-Skapar en minimal Java-runtime (~50 MB) med jlink som läggs i `resources/jre/`:
+### Bygg inbundlad JRE (valfritt)
+
+Vill du bygga JRE:n själv från din lokala OpenJDK-installation:
 
 ```bash
+brew install openjdk
 bash scripts/build-jre.sh
 ```
 
-### Konfigurera API-nycklar (valfritt)
+### Konfigurera API-nycklar
 
 För AI-funktionen behövs en nyckel från [Anthropic](https://console.anthropic.com) och/eller [OpenAI](https://platform.openai.com).
 
-Klicka på **⚙ → 📝 Öppna .env** i appen, fyll i nyckeln och starta om.
+Klicka på **⚙ → Öppna .env** i appen, fyll i nyckeln och starta om.
 
 Eller skapa filen manuellt:
 
-```bash
-cp src/.env.example ~/Library/Application\ Support/aiuda-puml/.env
-# Öppna och fyll i ANTHROPIC_API_KEY
+```
+~/Library/Application Support/aiuda-puml/.env
+```
+
+```env
+ANTHROPIC_API_KEY=sk-ant-...
+# OPENAI_API_KEY=sk-...
 ```
 
 ## Starta
@@ -59,32 +72,40 @@ cp src/.env.example ~/Library/Application\ Support/aiuda-puml/.env
 npm start
 ```
 
-## Projektstruktur
-
-```
-aiuda-puml/
-├── main.js              # Electron main — startar PlantUML och konverteringsservern
-├── preload.js
-├── src/
-│   ├── index.html       # UI — tre paneler: AI-chatt, editor, förhandsgranskning
-│   ├── app.js           # Frontend-logik
-│   ├── server.js        # Lokal server: /konvertera, /ai, /ai-status, /open-env
-│   └── *_parser.js      # Parser + layout + XML-generering per diagramtyp
-├── resources/
-│   ├── plantuml.jar     # PlantUML (~28 MB)
-│   └── jre/             # Inbundlad JRE, byggd av build-jre.sh (ej i git)
-└── scripts/
-    └── build-jre.sh     # jlink-skript
-```
-
 ## Bygga distribuerbar app
 
 ```bash
 npm run dist
 ```
 
-Bygger en `.dmg` i `dist/`. Kräver att `resources/jre/` är byggd och att `resources/icon.icns` finns.
+Bygger `.dmg` och `.zip` i `dist/`.
+
+## Projektstruktur
+
+```
+aiuda-puml/
+├── main.js              # Electron main — IPC-handlers för PlantUML, AI och konvertering
+├── preload.js           # contextBridge — exponerar window.aiuda till renderer
+├── src/
+│   ├── index.html       # UI — tre paneler: AI-chatt, editor, förhandsvisning
+│   ├── app.js           # Frontend-logik, menyhantering, export
+│   ├── konvertera.js    # PUML → draw.io XML-konvertering
+│   └── *_parser.js      # Parser + layout per diagramtyp
+├── resources/
+│   ├── plantuml.jar     # PlantUML (~28 MB)
+│   ├── icon.icns        # App-ikon (macOS)
+│   ├── icon.svg         # Källfil för ikonen
+│   └── jre/             # Inbundlad JRE (ej i git — laddas ner vid npm install)
+└── scripts/
+    ├── build-jre.sh     # Bygger JRE med jlink
+    └── download-jre.js  # Laddar ner färdigbyggd JRE (körs vid npm install)
+```
 
 ## Licens
 
-MIT
+Copyright © 2026 Tomas Gnossa
+
+Licensierad under [GNU General Public License v2](LICENSE).
+
+Appen buntar [PlantUML](https://plantuml.com) (GPL v2) och en minimal Java-runtime
+baserad på [OpenJDK](https://openjdk.org) (GPL v2 + Classpath Exception).
