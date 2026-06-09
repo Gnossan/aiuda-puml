@@ -968,7 +968,8 @@ window.aiuda.onÖppnaFil(({ innehåll, filnamn }) => {
     sättStatus(`öppnade ${filnamn}.puml`, "ok");
 });
 
-kodEl.value = läsFrånLagring() || STARTKOD;
+kodEl.value = STARTKOD;
+sparaTillLagring();
 uppdateraHighlight();
 rendera();
 
@@ -1099,7 +1100,8 @@ const aiInkluderaEl   = document.getElementById("ai-inkludera-kod");
 
 // ── Chatthistorik ──
 let aiChatt = []; // [{ role: "user"|"assistant", content }]
-try { aiChatt = JSON.parse(localStorage.getItem("aiChatt") || "[]"); } catch { aiChatt = []; }
+aiChatt = [];
+localStorage.removeItem("aiChatt");
 
 // ── Fyll modell-select utifrån vald leverantör ──
 function uppdateraModellLista() {
