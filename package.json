@@ -5,9 +5,10 @@
   "description": "PlantUML-editor med AI-stöd och draw.io-export",
   "main": "main.js",
   "scripts": {
-    "start":     "electron .",
-    "build-jre": "bash scripts/build-jre.sh",
-    "dist":      "electron-builder"
+    "start":       "electron .",
+    "postinstall": "node scripts/download-jre.js",
+    "build-jre":   "bash scripts/build-jre.sh",
+    "dist":        "electron-builder"
   },
   "devDependencies": {
     "electron":         "^35.0.0",
