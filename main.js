@@ -24,12 +24,18 @@ const { konverteraKälla } = require(path.join(__dirname, "src", "konvertera"));
 
 let mainWindow = null;
 
-// ── Hjälp: hitta .env-fil (userData > src/.env) ──
+// ── Hjälp: hitta .env-fil (userData i paketerad app, annars src/.env vid dev) ──
 function hämtaEnvStig() {
     const userData = app.getPath("userData");
-    return fs.existsSync(path.join(userData, ".env"))
-        ? path.join(userData, ".env")
-        : path.join(__dirname, "src", ".env");
+    const userEnv  = path.join(userData, ".env");
+    if (fs.existsSync(userEnv)) return userEnv;
+    // I dev-läge (ej paketerad): använd src/.env om den finns
+    if (!app.isPackaged) {
+        const devEnv = path.join(__dirname, "src", ".env");
+        if (fs.existsSync(devEnv)) return devEnv;
+    }
+    // Standard: userData/.env (skapas vid behov av oppna-env)
+    return userEnv;
 }
 
 // ── Hjälp: läs .env och returnera nyckel→värde-objekt ──
