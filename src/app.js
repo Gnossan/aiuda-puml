@@ -917,20 +917,31 @@ document.getElementById("stäng-knapp").addEventListener("click", () => {
     rensaChatt();
 });
 
-// ── Mall-väljare (dold select, triggas av Edit → Mall... / Cmd+T) ──
-const mallVäljarEl = document.getElementById("mall-väljare");
-mallVäljarEl.addEventListener("change", () => {
-    const vald = mallVäljarEl.value;
-    if (!vald) return;
-    if (kodEl.value.trim() && !confirm("Ersätta nuvarande kod med mallen?")) {
-        mallVäljarEl.value = "";
-        return;
-    }
-    kodEl.value = MALLAR[vald] || "";
-    mallVäljarEl.value = "";
-    uppdateraHighlight();
-    schemaläggRendering();
-    sparaTillLagring();
+// ── Mall-dialog (Edit → Mall… / Cmd+T) ──
+const mallDialogEl = document.getElementById("mall-dialog");
+
+function visaMallDialog() {
+    mallDialogEl.showModal();
+}
+
+mallDialogEl.querySelector("#mall-dialog-avbryt").addEventListener("click", () => {
+    mallDialogEl.close();
+});
+mallDialogEl.addEventListener("click", (e) => {
+    // Stäng om man klickar på bakgrunden
+    if (e.target === mallDialogEl) mallDialogEl.close();
+});
+
+mallDialogEl.querySelectorAll("[data-mall]").forEach((knapp) => {
+    knapp.addEventListener("click", () => {
+        const vald = knapp.dataset.mall;
+        mallDialogEl.close();
+        if (kodEl.value.trim() && !confirm("Ersätta nuvarande kod med mallen?")) return;
+        kodEl.value = MALLAR[vald] || "";
+        uppdateraHighlight();
+        schemaläggRendering();
+        sparaTillLagring();
+    });
 });
 
 // ── Menyhändelser från native-menyn (File / Edit) ──
@@ -959,13 +970,7 @@ window.aiuda.onMeny(async (händelse) => {
         }
 
         case "mall":
-            mallVäljarEl.focus();
-            mallVäljarEl.size = mallVäljarEl.options.length;
-            mallVäljarEl.style.display = "";
-            mallVäljarEl.addEventListener("blur", () => {
-                mallVäljarEl.size = 0;
-                mallVäljarEl.style.display = "none";
-            }, { once: true });
+            visaMallDialog();
             break;
     }
 });

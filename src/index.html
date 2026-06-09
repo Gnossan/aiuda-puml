@@ -453,10 +453,49 @@
         font-size: 12px; font-weight: 500; font-family: inherit;
         padding: 6px 14px; border-radius: 5px; border: 1px solid var(--border); cursor: pointer;
     }
-    #typ-dialog-ok      { background: var(--accent); color: #fff; border-color: var(--accent); }
+    #typ-dialog-ok      { background: var(--accent); color: #1a1610; border-color: var(--accent); }
     #typ-dialog-ok:hover { opacity: 0.85; }
     #typ-dialog-avbryt  { background: #2d2d2d; color: var(--text); }
-    #typ-dialog-avbryt:hover { background: #383838; }
+    #typ-dialog-avbryt:hover { background: #3a2e20; }
+
+    /* ── Mall-dialog ── */
+    #mall-dialog {
+        background: var(--panel);
+        color: var(--text);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 20px 24px 16px;
+        min-width: 320px;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+    }
+    #mall-dialog::backdrop { background: rgba(0,0,0,0.45); }
+    #mall-dialog h3 { margin: 0 0 16px; font-size: 13px; font-weight: 600; color: var(--accent); }
+    .mall-lista {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 6px;
+        margin-bottom: 14px;
+    }
+    .mall-lista button {
+        font-family: inherit;
+        font-size: 12px;
+        text-align: left;
+        padding: 7px 12px;
+        background: #211c14;
+        color: var(--text);
+        border: 1px solid var(--border);
+        border-radius: 5px;
+        cursor: pointer;
+        transition: background 0.1s, border-color 0.1s;
+    }
+    .mall-lista button:hover { background: #3a2e20; border-color: var(--accent); color: var(--accent); }
+    #mall-dialog-avbryt {
+        font-family: inherit; font-size: 12px;
+        padding: 6px 14px; border-radius: 5px;
+        border: 1px solid var(--border); cursor: pointer;
+        background: #2d2d2d; color: var(--text); float: right;
+    }
+    #mall-dialog-avbryt:hover { background: #3a2e20; }
 </style>
 </head>
 <body>
@@ -529,24 +568,6 @@
                 <span>PlantUML-källkod</span>
                 <span class="verktygsrad">
                     <button id="stäng-knapp" title="Stäng och töm editorn">Stäng</button>
-                    <!-- mall-väljare: dold select används av Edit → Mall... (Cmd+T) -->
-                    <select id="mall-väljare" style="display:none">
-                        <option value="">Mall …</option>
-                        <option value="usecase">Use case</option>
-                        <option value="sekvens">Sekvens</option>
-                        <option value="komponent">Komponent</option>
-                        <option value="aktivitet">Aktivitet</option>
-                        <option value="klass">Klass</option>
-                        <option value="tillstånd">Tillstånd</option>
-                        <option value="er">ER</option>
-                        <option value="deployment">Deployment</option>
-                        <option value="objekt">Object</option>
-                        <option value="timing">Timing</option>
-                        <option value="mindmap">MindMap</option>
-                        <option value="wbs">WBS</option>
-                        <option value="network">Network</option>
-                        <option value="gantt">Gantt</option>
-                    </select>
                 </span>
             </span>
             <span id="status" class="status">väntar …</span>
@@ -573,7 +594,6 @@
                     <button id="konvertera-drawio-knapp" title="Konvertera till drawio …">Konvertera till drawio …</button>
                 </span>
             </span>
-            <a class="länk" href="http://localhost:8080" target="_blank" rel="noopener">picoweb-server ↗</a>
         </header>
         <div class="förhandsvisning">
             <img id="bild" alt="Diagram-förhandsvisning">
@@ -583,6 +603,27 @@
 </div><!-- /.layout -->
 
 <input type="file" id="fil-input" accept=".puml,.txt,.uml,.iuml" style="display:none">
+
+<dialog id="mall-dialog" aria-modal="true">
+    <h3>Välj mall</h3>
+    <div class="mall-lista">
+        <button data-mall="usecase">Use case</button>
+        <button data-mall="sekvens">Sekvens</button>
+        <button data-mall="klass">Klass</button>
+        <button data-mall="aktivitet">Aktivitet</button>
+        <button data-mall="komponent">Komponent</button>
+        <button data-mall="tillstånd">Tillstånd</button>
+        <button data-mall="er">ER</button>
+        <button data-mall="deployment">Deployment</button>
+        <button data-mall="objekt">Objekt</button>
+        <button data-mall="timing">Timing</button>
+        <button data-mall="mindmap">MindMap</button>
+        <button data-mall="wbs">WBS</button>
+        <button data-mall="network">Network</button>
+        <button data-mall="gantt">Gantt</button>
+    </div>
+    <button id="mall-dialog-avbryt">Avbryt</button>
+</dialog>
 
 <dialog id="typ-dialog" aria-modal="true" aria-labelledby="typ-dialog-rubrik">
     <h3 id="typ-dialog-rubrik">Okänd diagramtyp</h3>
