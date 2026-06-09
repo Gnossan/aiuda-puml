@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AIuda PUML™</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,400&display=swap" rel="stylesheet">
+<style>
+    :root {
+        --bg:     #1a1610;
+        --panel:  #2a2218;
+        --text:   #f5f0e8;
+        --accent: #f0c040;
+        --border: #3d3326;
+    }
+    * { box-sizing: border-box; }
+    html, body {
+        margin: 0;
+        height: 100%;
+        background: var(--bg);
+        color: var(--text);
+        font-family: 'DM Mono', "SF Mono", Menlo, monospace;
+    }
+
+    /* ── Layout: tre paneler med resize-skarvar ── */
+    .layout {
+        display: flex;
+        height: 100vh;
+        overflow: hidden;
+    }
+    .panel {
+        display: flex;
+        flex-direction: column;
+        min-width: 150px;
+        flex-shrink: 0;
+        overflow: hidden;
+    }
+    .resize-skarv {
+        width: 5px;
+        flex-shrink: 0;
+        background: var(--border);
+        cursor: col-resize;
+        transition: background 0.12s;
+        position: relative;
+    }
+    .resize-skarv::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        margin: auto;
+        width: 1px;
+        height: 32px;
+        background: #555;
+    }
+    .resize-skarv:hover,
+    .resize-skarv.drar { background: var(--accent); }
+    body.col-resize,
+    body.col-resize * { cursor: col-resize !important; user-select: none !important; }
+
+    /* ── Gemensam header ── */
+    header {
+        padding: 10px 14px;
+        font-size: 13px;
+        font-weight: 600;
+        letter-spacing: 0.02em;
+        background: var(--panel);
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        flex-shrink: 0;
+    }
+    header .vänster {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        min-width: 0;
+        flex-wrap: wrap;
+    }
+    header .status {
+        font-weight: 400;
+        font-size: 12px;
+        color: #999;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 260px;
+    }
+    header .status.fel { color: #e07070; }
+    header .status.ok  { color: #7fc97f; }
+
+    /* ── Knappar och selects i verktygsrad ── */
+    .verktygsrad {
+        display: flex;
+        gap: 5px;
+        flex-wrap: wrap;
+        align-items: center;
+    }
+    .verktygsrad button,
+    .ikonknapp {
+        font-size: 12px;
+        font-weight: 500;
+        font-family: inherit;
+        color: var(--text);
+        background: #2d2d2d;
+        border: 1px solid var(--border);
+        border-radius: 5px;
+        padding: 5px 10px;
+        cursor: pointer;
+        line-height: 1;
+    }
+    .verktygsrad button:hover, .ikonknapp:hover { background: #3a2e20; border-color: #5a4a30; }
+    .verktygsrad button:active, .ikonknapp:active { background: #444; }
+    .verktygsrad button:disabled { opacity: 0.4; cursor: default; }
+    .ikonknapp { padding: 4px 8px; font-size: 14px; }
+    .verktygsrad select {
+        font-size: 12px;
+        font-weight: 500;
+        font-family: inherit;
+        color: var(--text);
+        background: #2d2d2d;
+        border: 1px solid var(--border);
+        border-radius: 5px;
+        padding: 5px 8px;
+        cursor: pointer;
+        appearance: none;
+        -webkit-appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23999'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 8px center;
+        padding-right: 24px;
+    }
+    .verktygsrad select:hover  { background-color: #3a2e20; border-color: #5a4a30; }
+    .verktygsrad select option { background: #2d2d2d; color: var(--text); }
+
+    /* ── Editor-panel ── */
+    .editor-yta {
+        position: relative;
+        flex: 1;
+        overflow: hidden;
+    }
+    .editor-yta pre,
+    .editor-yta textarea {
+        position: absolute;
+        inset: 0;
+        margin: 0;
+        padding: 14px;
+        border: none;
+        font-family: "SF Mono", Menlo, monospace;
+        font-size: 13px;
+        line-height: 1.5;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+        overflow: auto;
+    }
+    .editor-yta pre {
+        color: var(--text);
+        background: var(--bg);
+        pointer-events: none;
+    }
+    .editor-yta textarea {
+        resize: none;
+        outline: none;
+        background: transparent;
+        color: transparent;
+        caret-color: var(--text);
+    }
+    .editor-yta textarea::selection { background: rgba(111,177,224,0.35); }
+    .syn-direktiv  { color: #d8a657; font-weight: 600; }
+    .syn-nyckelord { color: #6fb1e0; }
+    .syn-pil       { color: #b294bb; }
+    .syn-sträng    { color: #b5bd68; }
+    .syn-kommentar { color: #6a6a6a; font-style: italic; }
+    .syn-stereotyp { color: #d08770; }
+
+    /* ── Förhandsvisning ── */
+    .förhandsvisning {
+        flex: 1;
+        overflow: hidden;
+        position: relative;
+        padding: 16px;
+        background: #ffffff;
+        display: grid;
+        place-items: center;
+    }
+    .förhandsvisning img { max-width:100%; height:auto; transform-origin:center; transition:transform 0.08s ease-out; }
+    .förhandsvisning.zoomad    { cursor: grab; }
+    .förhandsvisning.panorerar { cursor: grabbing; }
+    .förhandsvisning.zoomad img    { max-width: none; }
+    .förhandsvisning.panorerar img { transition: none; }
+    .länk { font-size:11px; color:#888; text-decoration:none; white-space:nowrap; }
+    .länk:hover { color: var(--accent); }
+
+    /* ── AI-panel ── */
+    #ai-panel { background: var(--panel); }
+
+    .ai-inst {
+        border-bottom: 1px solid var(--border);
+        padding: 12px;
+        background: #1e1e1e;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        font-size: 12px;
+        flex-shrink: 0;
+    }
+    .ai-inst.dold { display: none; }
+    .ai-inst-rad label {
+        display: block;
+        color: #888;
+        font-size: 11px;
+        margin-bottom: 3px;
+    }
+    .ai-inst-rad input[type="password"],
+    .ai-inst-rad select {
+        width: 100%;
+        font-size: 12px;
+        font-family: inherit;
+        color: var(--text);
+        background: #2d2d2d;
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        padding: 6px 8px;
+        outline: none;
+        appearance: none;
+        -webkit-appearance: none;
+    }
+    .ai-inst-rad select {
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23999'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 8px center;
+        padding-right: 24px;
+    }
+    .ai-inst-rad select option { background: #2d2d2d; }
+    .ai-inst-rad input[type="password"]:focus,
+    .ai-inst-rad select:focus { border-color: var(--accent); }
+    #ai-spara-inst {
+        align-self: flex-end;
+        font-size: 11px;
+        font-family: inherit;
+        padding: 5px 14px;
+        background: var(--accent);
+        color: #fff;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+    #ai-spara-inst:hover { opacity: 0.85; }
+
+    .ai-ingen-nyckel {
+        padding: 14px 14px 0;
+        font-size: 11px;
+        color: #888;
+        text-align: center;
+        line-height: 1.5;
+    }
+    .ai-ingen-nyckel a {
+        color: var(--accent);
+        cursor: pointer;
+        text-decoration: underline;
+        background: none;
+        border: none;
+        font-size: 11px;
+        font-family: inherit;
+        padding: 0;
+    }
+
+    .ai-meddelanden {
+        flex: 1;
+        overflow-y: auto;
+        padding: 10px 10px 4px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        scroll-behavior: smooth;
+    }
+    .ai-meddelande { display: flex; flex-direction: column; gap: 2px; }
+    .ai-avsändare  { font-size: 10px; font-weight: 600; color: #666; padding: 0 4px; }
+    .ai-meddelande.användare .ai-avsändare { color: #c8a030; text-align: right; }
+    .ai-bubbla {
+        font-size: 12px;
+        line-height: 1.55;
+        padding: 8px 10px;
+        border-radius: 10px;
+        word-break: break-word;
+    }
+    .ai-meddelande.användare .ai-bubbla {
+        background: #1b3a5c;
+        border-radius: 10px 10px 3px 10px;
+        margin-left: 15%;
+    }
+    .ai-meddelande.assistent .ai-bubbla {
+        background: #2a2a2a;
+        border: 1px solid var(--border);
+        border-radius: 10px 10px 10px 3px;
+        margin-right: 5%;
+    }
+    .ai-bubbla p { margin: 0 0 6px; }
+    .ai-bubbla p:last-child { margin-bottom: 0; }
+    .ai-kodblock {
+        background: #111;
+        border: 1px solid #3a3a3a;
+        border-radius: 6px;
+        margin: 6px 0;
+        overflow: hidden;
+    }
+    .ai-kodblock pre {
+        margin: 0;
+        padding: 8px 10px;
+        font-family: "SF Mono", Menlo, monospace;
+        font-size: 11px;
+        white-space: pre;
+        overflow-x: auto;
+        color: #b5bd68;
+        line-height: 1.4;
+    }
+    .ai-använd-kod {
+        display: block;
+        width: 100%;
+        padding: 5px 10px;
+        background: #1e1e1e;
+        border: none;
+        border-top: 1px solid #3a3a3a;
+        color: var(--accent);
+        font-size: 11px;
+        font-family: inherit;
+        cursor: pointer;
+        text-align: left;
+    }
+    .ai-använd-kod:hover { background: #2a2a2a; }
+
+    .ai-laddar { display: flex; gap: 4px; padding: 8px 10px; }
+    .ai-laddar span {
+        width: 6px; height: 6px; border-radius: 50%;
+        background: var(--accent); opacity: 0.4;
+        animation: aiPuls 1.2s ease-in-out infinite;
+    }
+    .ai-laddar span:nth-child(2) { animation-delay: 0.2s; }
+    .ai-laddar span:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes aiPuls {
+        0%, 80%, 100% { opacity: 0.2; transform: scale(0.8); }
+        40%            { opacity: 1;   transform: scale(1); }
+    }
+
+    .ai-snabbknappar {
+        display: flex;
+        gap: 4px;
+        padding: 6px 10px;
+        border-top: 1px solid var(--border);
+        flex-shrink: 0;
+        flex-wrap: wrap;
+    }
+    .ai-snabb {
+        font-size: 11px;
+        font-family: inherit;
+        padding: 4px 9px;
+        background: #2d2d2d;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        color: #ccc;
+        cursor: pointer;
+    }
+    .ai-snabb:hover { background: #383838; color: var(--text); }
+
+    .ai-inmatningsyta {
+        border-top: 1px solid var(--border);
+        padding: 8px 10px;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        flex-shrink: 0;
+        background: #1e1e1e;
+    }
+    .ai-inkludera-rad {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 11px;
+        color: #777;
+        cursor: pointer;
+    }
+    .ai-inkludera-rad input { cursor: pointer; }
+    #ai-prompt-input {
+        width: 100%;
+        font-size: 12px;
+        font-family: inherit;
+        color: var(--text);
+        background: #2d2d2d;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 7px 9px;
+        resize: none;
+        outline: none;
+        line-height: 1.5;
+        min-height: 60px;
+        max-height: 160px;
+    }
+    #ai-prompt-input:focus { border-color: var(--accent); }
+    #ai-skicka-knapp {
+        align-self: flex-end;
+        font-size: 12px;
+        font-family: inherit;
+        padding: 6px 16px;
+        background: var(--accent);
+        color: #fff;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-weight: 500;
+    }
+    #ai-skicka-knapp:hover   { opacity: 0.85; }
+    #ai-skicka-knapp:disabled { opacity: 0.4; cursor: default; }
+
+    /* ── Typ-dialog ── */
+    #typ-dialog {
+        background: var(--panel);
+        color: var(--text);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 24px 28px;
+        min-width: 360px;
+        max-width: 480px;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+    }
+    #typ-dialog::backdrop { background: rgba(0,0,0,0.55); }
+    #typ-dialog h3 { margin: 0 0 12px; font-size: 14px; font-weight: 600; color: #e07070; }
+    #typ-dialog p  { margin: 0 0 16px; font-size: 13px; line-height: 1.5; color: #bbb; }
+    #typ-dialog label { display: block; font-size: 12px; color: #999; margin-bottom: 6px; }
+    #typ-dialog-val {
+        width: 100%;
+        font-size: 13px;
+        font-family: inherit;
+        color: var(--text);
+        background: #2d2d2d;
+        border: 1px solid var(--border);
+        border-radius: 5px;
+        padding: 7px 10px;
+        margin-bottom: 20px;
+        cursor: pointer;
+        appearance: none;
+        -webkit-appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23999'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 10px center;
+        padding-right: 28px;
+    }
+    #typ-dialog-val option { background: #2d2d2d; }
+    .typ-dialog-knappar { display: flex; gap: 8px; justify-content: flex-end; }
+    .typ-dialog-knappar button {
+        font-size: 12px; font-weight: 500; font-family: inherit;
+        padding: 6px 14px; border-radius: 5px; border: 1px solid var(--border); cursor: pointer;
+    }
+    #typ-dialog-ok      { background: var(--accent); color: #fff; border-color: var(--accent); }
+    #typ-dialog-ok:hover { opacity: 0.85; }
+    #typ-dialog-avbryt  { background: #2d2d2d; color: var(--text); }
+    #typ-dialog-avbryt:hover { background: #383838; }
+</style>
+</head>
+<body>
+<div class="layout">
+
+    <!-- ── AI-panel (vänster) ── -->
+    <div class="panel" id="ai-panel">
+        <header>
+            <span>AIuda PUML<sup style="font-size:9px;letter-spacing:0;">™</sup></span>
+            <div style="display:flex;gap:6px;align-items:center;">
+                <button class="ikonknapp" id="ai-rensa-knapp" title="Rensa chatthistorik">🗑</button>
+                <button class="ikonknapp" id="ai-inst-knapp"  title="API-inställningar">⚙</button>
+            </div>
+        </header>
+
+        <!-- Inställningar (dold som standard) -->
+        <div id="ai-inst" class="ai-inst dold">
+            <div class="ai-inst-rad">
+                <label for="ai-provider">Leverantör</label>
+                <select id="ai-provider">
+                    <option value="anthropic">Anthropic (Claude)</option>
+                    <option value="openai">OpenAI (GPT)</option>
+                </select>
+            </div>
+            <div class="ai-inst-rad">
+                <label for="ai-modell">Modell</label>
+                <select id="ai-modell"></select>
+            </div>
+            <div id="ai-nyckel-status" style="font-size:11px;color:#888;line-height:1.5;padding:4px 2px;">
+                <!-- uppdateras av JS -->
+            </div>
+            <div style="display:flex;gap:6px;align-items:center;margin-top:4px;">
+                <button id="ai-spara-inst">Spara</button>
+                <button id="ai-oppna-env" title="Skapa/öppna .env i texteditor">📝 Öppna .env</button>
+            </div>
+            <p style="font-size:10px;color:#666;margin:4px 0 0;line-height:1.5;">
+                API-nycklar konfigureras i <code style="color:#888;">.env</code> bredvid <code style="color:#888;">server.js</code>.
+            </p>
+        </div>
+
+        <!-- Chatthistorik -->
+        <div id="ai-meddelanden" class="ai-meddelanden"></div>
+
+        <!-- Snabbknappar -->
+        <div class="ai-snabbknappar">
+            <button class="ai-snabb" data-snabb="förklara">Förklara</button>
+            <button class="ai-snabb" data-snabb="förbättra">Förbättra</button>
+            <button class="ai-snabb" data-snabb="generera">Generera …</button>
+        </div>
+
+        <!-- Inmatning -->
+        <div class="ai-inmatningsyta">
+            <label class="ai-inkludera-rad">
+                <input type="checkbox" id="ai-inkludera-kod" checked>
+                <span>Skicka med källkod</span>
+            </label>
+            <textarea id="ai-prompt-input"
+                placeholder="Fråga om diagrammet, be om förbättringar eller beskriv ett nytt …"
+                rows="3"></textarea>
+            <button id="ai-skicka-knapp">↑ Skicka</button>
+        </div>
+    </div>
+
+    <div class="resize-skarv" id="skarv-1"></div>
+
+    <!-- ── Editor-panel ── -->
+    <div class="panel" id="editor-panel">
+        <header>
+            <span class="vänster">
+                <span>PlantUML-källkod</span>
+                <span class="verktygsrad">
+                    <select id="mall-väljare" title="Ladda in en mall för vald diagramtyp">
+                        <option value="">Mall …</option>
+                        <option value="usecase">Use case</option>
+                        <option value="sekvens">Sekvens</option>
+                        <option value="komponent">Komponent</option>
+                        <option value="aktivitet">Aktivitet</option>
+                        <option value="klass">Klass</option>
+                        <option value="tillstånd">Tillstånd</option>
+                        <option value="er">ER</option>
+                        <option value="deployment">Deployment</option>
+                        <option value="objekt">Object</option>
+                        <option value="timing">Timing</option>
+                        <option value="mindmap">MindMap</option>
+                        <option value="wbs">WBS</option>
+                        <option value="network">Network</option>
+                        <option value="gantt">Gantt</option>
+                    </select>
+                    <button id="nytt-knapp"  title="Nytt tomt diagram">Nytt</button>
+                    <button id="stäng-knapp" title="Stäng och töm editorn">Stäng</button>
+                    <button id="öppna-knapp" title="Öppna en .puml-fil från disk">Öppna …</button>
+                    <button id="spara-knapp" title="Spara koden som en .puml-fil">Spara</button>
+                </span>
+            </span>
+            <span id="status" class="status">väntar …</span>
+        </header>
+        <div class="editor-yta">
+            <pre id="highlight" aria-hidden="true"><code></code></pre>
+            <textarea id="kod" spellcheck="false"></textarea>
+        </div>
+    </div>
+
+    <div class="resize-skarv" id="skarv-2"></div>
+
+    <!-- ── Förhandsvisning ── -->
+    <div class="panel" id="preview-panel">
+        <header>
+            <span class="vänster">
+                <span>Förhandsvisning</span>
+                <span class="verktygsrad">
+                    <button id="zooma-ut-knapp"      title="Zooma ut (Cmd/Ctrl + −)">−</button>
+                    <button id="zoom-nivå-knapp"     title="Återställ zoom (Cmd/Ctrl + 0)">100%</button>
+                    <button id="zooma-in-knapp"      title="Zooma in (Cmd/Ctrl + +)">+</button>
+                    <button id="exportera-svg-knapp" disabled title="Ladda ner SVG">Exportera SVG</button>
+                    <button id="exportera-png-knapp" disabled title="Ladda ner PNG">Exportera PNG</button>
+                    <button id="konvertera-drawio-knapp" title="Konvertera till drawio …">Konvertera till drawio …</button>
+                </span>
+            </span>
+            <a class="länk" href="http://localhost:8080" target="_blank" rel="noopener">picoweb-server ↗</a>
+        </header>
+        <div class="förhandsvisning">
+            <img id="bild" alt="Diagram-förhandsvisning">
+        </div>
+    </div>
+
+</div><!-- /.layout -->
+
+<input type="file" id="fil-input" accept=".puml,.txt,.uml,.iuml" style="display:none">
+
+<dialog id="typ-dialog" aria-modal="true" aria-labelledby="typ-dialog-rubrik">
+    <h3 id="typ-dialog-rubrik">Okänd diagramtyp</h3>
+    <p id="typ-dialog-text"></p>
+    <label for="typ-dialog-val">Välj diagramtyp att konvertera som:</label>
+    <select id="typ-dialog-val"></select>
+    <div class="typ-dialog-knappar">
+        <button id="typ-dialog-avbryt">Avbryt</button>
+        <button id="typ-dialog-ok">Konvertera</button>
+    </div>
+</dialog>
+
+<script src="app.js"></script>
+</body>
+</html>

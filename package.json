@@ -1,0 +1,33 @@
+{
+  "name": "aiuda-puml",
+  "productName": "AIuda PUML",
+  "version": "1.0.0",
+  "description": "PlantUML-editor med AI-stöd och draw.io-export",
+  "main": "main.js",
+  "scripts": {
+    "start":     "electron .",
+    "build-jre": "bash scripts/build-jre.sh",
+    "dist":      "electron-builder"
+  },
+  "devDependencies": {
+    "electron":         "^35.0.0",
+    "electron-builder": "^25.0.0"
+  },
+  "build": {
+    "appId":       "se.gnossa.aiuda-puml",
+    "productName": "AIuda PUML",
+    "mac": {
+      "category": "public.app-category.developer-tools",
+      "icon":     "resources/icon.icns"
+    },
+    "extraResources": [
+      { "from": "resources/plantuml.jar", "to": "plantuml.jar" },
+      { "from": "resources/jre",          "to": "jre",          "filter": ["**/*"] }
+    ],
+    "files": [
+      "main.js",
+      "preload.js",
+      "src/**/*"
+    ]
+  }
+}
