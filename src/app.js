@@ -806,7 +806,7 @@ left side
 *** Driftsättning
 @endwbs`,
 
-    network: `@startuml
+    network: `@startnwdiag
 nwdiag {
   network internet {
     address = "0.0.0.0/0"
@@ -824,7 +824,7 @@ nwdiag {
     db   [address = "10.0.2.20", shape = "database"]
   }
 }
-@enduml`,
+@endnwdiag`,
 
     gantt: `@startgantt
 Project starts 2024-09-01
