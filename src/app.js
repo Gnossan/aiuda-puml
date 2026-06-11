@@ -237,8 +237,8 @@ function exporteraPng() {
 }
 
 // ----------------------------------------------------------------------
-// Konvertera till drawio — pratar med vår egen lokala konverteringsserver
-// (src/server.js, startas automatiskt av Electron-appen).
+// Konvertera till drawio — sker direkt i Electron-processen via IPC
+// (main.js, konverteraKälla).
 //
 // Pipelinen bygger ÄKTA, redigerbara drawio-element (inte en bild) genom att
 // tolka PUML-källkoden direkt — men bara för de diagramtyper vi hittills
@@ -1046,7 +1046,7 @@ const AI_MODELLER = {
     anthropic: [
         { id: "claude-opus-4-8",    namn: "Claude Opus 4.8 (flagship)"   },
         { id: "claude-sonnet-4-6",  namn: "Claude Sonnet 4.6 (balans)"   },
-        { id: "claude-haiku-4-5",   namn: "Claude Haiku 4.5 (snabb)"     },
+        { id: "claude-haiku-4-5-20251001", namn: "Claude Haiku 4.5 (snabb)" },
     ],
     openai: [
         { id: "gpt-5.5",      namn: "GPT-5.5 (flagship)"  },

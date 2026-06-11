@@ -112,7 +112,9 @@ aiuda-puml/
 
 ## Licens
 
-Copyright © 2026 Tomas Gnossa
+Copyright © 2026 Tomas Hultberg
+
+Byggd med hjälp av [Claude](https://claude.ai) (Anthropic).
 
 Licensierad under [GNU General Public License v2](LICENSE).
 

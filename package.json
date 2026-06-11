@@ -4,7 +4,7 @@
   "version": "1.2.2",
   "description": "PlantUML-editor med AI-stöd och draw.io-export",
   "license": "GPL-2.0-only",
-  "author": "Tomas Gnossa",
+  "author": "Tomas Hultberg",
   "main": "main.js",
   "scripts": {
     "start": "electron .",

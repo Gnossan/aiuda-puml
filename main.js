@@ -432,6 +432,13 @@ function createWindow() {
 
 // ── App-livscykel ──
 app.whenReady().then(() => {
+    app.setAboutPanelOptions({
+        applicationName:    "AIuda PUML",
+        applicationVersion: app.getVersion(),
+        copyright:          "Copyright © 2026 Tomas Hultberg",
+        credits:            "Byggd med hjälp av Claude (Anthropic).",
+    });
+
     byggMeny();
     createWindow();
 
