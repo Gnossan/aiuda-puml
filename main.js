@@ -128,7 +128,11 @@ ipcMain.handle("rendera-puml", (_händelse, källkod) => {
     return new Promise((lös, förkasta) => {
         const proc = spawn(
             JAVA_BIN,
-            ["-Djava.awt.headless=true", "-jar", PUML_JAR, "-pipe", "-tsvg"],
+            [
+                "-Djava.awt.headless=true",
+                "-DPLANTUML_SECURITY_PROFILE=SANDBOX",
+                "-jar", PUML_JAR, "-pipe", "-tsvg",
+            ],
             { stdio: ["pipe", "pipe", "pipe"] }
         );
         let svg = "";
