@@ -1,0 +1,56 @@
+name: Kolla PlantUML-version
+
+on:
+  schedule:
+    - cron: '0 6 * * 1'  # varje måndag 06:00 UTC
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+
+    steps:
+      - name: Checka ut kod
+        uses: actions/checkout@v4
+
+      - name: Sätt upp Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Läs bundlad PlantUML-version
+        id: bundlad
+        run: |
+          VERSION=$(java -jar resources/plantuml.jar -version | head -1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+')
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Hämta senaste PlantUML-release
+        id: senaste
+        run: |
+          TAG=$(curl -fsSL https://api.github.com/repos/plantuml/plantuml/releases/latest | jq -r .tag_name)
+          echo "version=${TAG#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Skapa issue om en nyare version finns
+        if: steps.bundlad.outputs.version != steps.senaste.outputs.version
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BUNDLAD: ${{ steps.bundlad.outputs.version }}
+          SENASTE: ${{ steps.senaste.outputs.version }}
+        run: |
+          TITEL="Uppdatera bundlad plantuml.jar (${BUNDLAD} → ${SENASTE})"
+          BEFINTLIG=$(gh issue list --state open --search "in:title \"Uppdatera bundlad plantuml.jar\"" --json title -q '.[].title')
+          if echo "$BEFINTLIG" | grep -qF "$TITEL"; then
+            echo "Issue finns redan: $TITEL"
+            exit 0
+          fi
+          gh issue create --title "$TITEL" --body "En nyare version av PlantUML är tillgänglig.
+
+          - Bundlad version: \`${BUNDLAD}\`
+          - Senaste version: \`${SENASTE}\`
+
+          Ladda ner: https://github.com/plantuml/plantuml/releases/download/v${SENASTE}/plantuml-${SENASTE}.jar
+
+          (Automatiskt skapad av workflowet \"Kolla PlantUML-version\". Se även #13.)"
