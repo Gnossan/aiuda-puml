@@ -41,7 +41,8 @@
       "preload.js",
       "src/**/*",
       "!src/.env",
-      "!src/.env.local"
+      "!src/.env.local",
+      "!src/.env.migrerad"
     ],
     "publish": {
       "provider": "github",

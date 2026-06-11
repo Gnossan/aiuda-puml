@@ -1,6 +1,7 @@
 node_modules/
 dist/
 src/.env
+src/.env.migrerad
 resources/jre/
 resources/*.tar.gz
 *.log

@@ -1071,6 +1071,8 @@ const aiProviderEl    = document.getElementById("ai-provider");
 const aiModellEl      = document.getElementById("ai-modell");
 const aiSparaInstEl   = document.getElementById("ai-spara-inst");
 const aiNyckelStatusEl = document.getElementById("ai-nyckel-status");
+const aiNyckelAnthropicEl = document.getElementById("ai-nyckel-anthropic");
+const aiNyckelOpenaiEl     = document.getElementById("ai-nyckel-openai");
 const aiMeddelandenEl = document.getElementById("ai-meddelanden");
 const aiPromptEl      = document.getElementById("ai-prompt-input");
 const aiSkickaEl      = document.getElementById("ai-skicka-knapp");
@@ -1105,7 +1107,7 @@ async function uppdateraNyckelStatus() {
         if (aiNyckelStatusEl) {
             aiNyckelStatusEl.innerHTML = harNyckel
                 ? `<span style="color:#7fc97f;">✓ Nyckel konfigurerad</span>`
-                : `<span style="color:#e07070;">✗ Nyckel saknas — lägg till i .env</span>`;
+                : `<span style="color:#e07070;">✗ Ingen nyckel sparad ännu</span>`;
         }
         return harNyckel;
     } catch {
@@ -1126,28 +1128,30 @@ laddaAiInst();
 aiProviderEl.addEventListener("change", uppdateraNyckelStatus);
 
 // ── Spara-knapp ──
-aiSparaInstEl.addEventListener("click", () => {
+aiSparaInstEl.addEventListener("click", async () => {
     sparaAiInst({
         provider: aiProviderEl.value,
         modell:   aiModellEl.value,
     });
+
+    const orig = aiSparaInstEl.textContent;
+    try {
+        if (aiNyckelAnthropicEl.value.trim()) {
+            await window.aiuda.sparaApiNyckel("anthropic", aiNyckelAnthropicEl.value.trim());
+            aiNyckelAnthropicEl.value = "";
+        }
+        if (aiNyckelOpenaiEl.value.trim()) {
+            await window.aiuda.sparaApiNyckel("openai", aiNyckelOpenaiEl.value.trim());
+            aiNyckelOpenaiEl.value = "";
+        }
+        aiSparaInstEl.textContent = "✓ Sparat";
+    } catch (e) {
+        alert(`Kunde inte spara API-nyckel: ${e.message}`);
+    }
+
+    setTimeout(() => { aiSparaInstEl.textContent = orig; }, 1500);
     aiInstEl.classList.add("dold");
     uppdateraNyckelStatus();
-});
-
-// ── Öppna .env i texteditor ──
-document.getElementById("ai-oppna-env").addEventListener("click", async () => {
-    try {
-        await window.aiuda.oppnaEnv();
-        // Kort feedback — blinkar knappetiketten
-        const knapp = document.getElementById("ai-oppna-env");
-        const orig  = knapp.textContent;
-        knapp.textContent = "✓ Öppnad";
-        knapp.disabled = true;
-        setTimeout(() => { knapp.textContent = orig; knapp.disabled = false; }, 2000);
-    } catch (e) {
-        alert(`Kunde inte öppna .env: ${e.message}`);
-    }
 });
 
 // ── Växla inställningspanel ──
@@ -1251,8 +1255,7 @@ async function visaIngenNyckelHint() {
         const div = document.createElement("div");
         div.className = "ai-ingen-nyckel";
         div.innerHTML = `Ingen API-nyckel konfigurerad.<br>
-            Lägg till nyckeln i <code>.env</code>-filen<br>
-            och starta om servern. &nbsp;
+            Lägg till den under &nbsp;
             <button onclick="document.getElementById('ai-inst').classList.remove('dold')">
             Inställningar ⚙</button>`;
         aiMeddelandenEl.insertBefore(div, aiMeddelandenEl.firstChild);

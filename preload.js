@@ -20,9 +20,9 @@ contextBridge.exposeInMainWorld("aiuda", {
     ai: (provider, model, messages) =>
         ipcRenderer.invoke("ai", { provider, model, messages }),
 
-    // Öppnar .env-filen i systemets texteditor.
-    oppnaEnv: () =>
-        ipcRenderer.invoke("oppna-env"),
+    // Sparar en API-nyckel krypterat (Electron safeStorage / OS-nyckelring).
+    sparaApiNyckel: (provider, nyckel) =>
+        ipcRenderer.invoke("spara-api-nyckel", { provider, nyckel }),
 
     // Menyhändelser från main-processen → renderer.
     onMeny:     (cb) => ipcRenderer.on("meny",           (_, h) => cb(h)),

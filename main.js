@@ -1,9 +1,9 @@
 "use strict";
 
-const { app, BrowserWindow, dialog, ipcMain, Menu } = require("electron");
+const { app, BrowserWindow, dialog, ipcMain, Menu, safeStorage } = require("electron");
 app.name = "AIuda PUML";
 const path        = require("path");
-const { spawn, execFile } = require("child_process");
+const { spawn }   = require("child_process");
 const fs          = require("fs");
 const { autoUpdater } = require("electron-updater");
 
@@ -52,6 +52,69 @@ function läsEnvFil(stig) {
         env[m[1]] = värde;
     }
     return env;
+}
+
+// ── Hjälp: säker lagring av API-nycklar (Electron safeStorage / OS-nyckelring) ──
+function hämtaNyckelStig() {
+    return path.join(app.getPath("userData"), "api-nycklar.json");
+}
+
+// ── Hjälp: läs och avkryptera sparade API-nycklar ──
+function läsApiNycklar() {
+    const stig = hämtaNyckelStig();
+    if (!fs.existsSync(stig)) return {};
+    try {
+        const data    = JSON.parse(fs.readFileSync(stig, "utf8"));
+        const nycklar = {};
+        for (const [namn, krypterad] of Object.entries(data)) {
+            try {
+                nycklar[namn] = safeStorage.decryptString(Buffer.from(krypterad, "base64"));
+            } catch {
+                // Avkryptering misslyckades (t.ex. nyckelfilen flyttad till annan maskin) — hoppa över
+            }
+        }
+        return nycklar;
+    } catch {
+        return {};
+    }
+}
+
+// ── Hjälp: kryptera och spara (eller ta bort) en API-nyckel ──
+function sparaApiNyckel(namn, värde) {
+    const stig = hämtaNyckelStig();
+    let data = {};
+    if (fs.existsSync(stig)) {
+        try { data = JSON.parse(fs.readFileSync(stig, "utf8")); } catch { data = {}; }
+    }
+    if (värde) {
+        data[namn] = safeStorage.encryptString(värde).toString("base64");
+    } else {
+        delete data[namn];
+    }
+    fs.writeFileSync(stig, JSON.stringify(data, null, 2), { encoding: "utf8", mode: 0o600 });
+}
+
+// ── Engångsmigrering: flytta ev. nycklar från klartext-.env till safeStorage ──
+function migreraEnvTillSafeStorage() {
+    if (!safeStorage.isEncryptionAvailable()) return;
+    if (fs.existsSync(hämtaNyckelStig())) return; // redan migrerat
+
+    const envStig = hämtaEnvStig();
+    if (!fs.existsSync(envStig)) return;
+
+    const env = läsEnvFil(envStig);
+    let migrerat = false;
+    if (env.ANTHROPIC_API_KEY) { sparaApiNyckel("ANTHROPIC_API_KEY", env.ANTHROPIC_API_KEY); migrerat = true; }
+    if (env.OPENAI_API_KEY)    { sparaApiNyckel("OPENAI_API_KEY",    env.OPENAI_API_KEY);    migrerat = true; }
+
+    if (migrerat) {
+        try {
+            fs.renameSync(envStig, `${envStig}.migrerad`);
+            console.log(`API-nycklar migrerade till säker lagring (${hämtaNyckelStig()}). Gammal .env flyttad till ${envStig}.migrerad.`);
+        } catch (fel) {
+            console.warn("Kunde inte flytta gammal .env-fil efter migrering:", fel);
+        }
+    }
 }
 
 // ── AI: system-prompt ──
@@ -169,24 +232,24 @@ ipcMain.handle("konvertera", (_händelse, { källkod, typ }) => {
 
 // ── IPC: vilka API-nycklar är konfigurerade? ──
 ipcMain.handle("ai-status", () => {
-    const env = läsEnvFil(hämtaEnvStig());
+    const nycklar = läsApiNycklar();
     return {
-        anthropic: !!(env.ANTHROPIC_API_KEY || process.env.ANTHROPIC_API_KEY),
-        openai:    !!(env.OPENAI_API_KEY    || process.env.OPENAI_API_KEY),
+        anthropic: !!(nycklar.ANTHROPIC_API_KEY || process.env.ANTHROPIC_API_KEY),
+        openai:    !!(nycklar.OPENAI_API_KEY    || process.env.OPENAI_API_KEY),
     };
 });
 
 // ── IPC: AI-chatt (proxyas till Anthropic eller OpenAI) ──
 ipcMain.handle("ai", async (_händelse, { provider, model, messages }) => {
     if (!messages?.length) return { fel: "Inga meddelanden." };
-    const env     = läsEnvFil(hämtaEnvStig());
+    const nycklar   = läsApiNycklar();
     const apiNyckel = provider === "openai"
-        ? (env.OPENAI_API_KEY    || process.env.OPENAI_API_KEY)
-        : (env.ANTHROPIC_API_KEY || process.env.ANTHROPIC_API_KEY);
+        ? (nycklar.OPENAI_API_KEY    || process.env.OPENAI_API_KEY)
+        : (nycklar.ANTHROPIC_API_KEY || process.env.ANTHROPIC_API_KEY);
 
     if (!apiNyckel) {
-        const variabel = provider === "openai" ? "OPENAI_API_KEY" : "ANTHROPIC_API_KEY";
-        return { fel: `Ingen API-nyckel för ${provider}. Lägg till ${variabel} i .env-filen.` };
+        const namn = provider === "openai" ? "OpenAI" : "Anthropic";
+        return { fel: `Ingen API-nyckel för ${namn}. Lägg till den under API-inställningar (⚙).` };
     }
 
     try {
@@ -199,33 +262,14 @@ ipcMain.handle("ai", async (_händelse, { provider, model, messages }) => {
     }
 });
 
-// ── IPC: öppna .env i systemets texteditor ──
-ipcMain.handle("oppna-env", () => {
-    return new Promise((lös, förkasta) => {
-        const envStig     = hämtaEnvStig();
-        const exempelStig = path.join(__dirname, "src", ".env.example");
-
-        if (!fs.existsSync(envStig) && fs.existsSync(exempelStig)) {
-            fs.copyFileSync(exempelStig, envStig);
-        } else if (!fs.existsSync(envStig)) {
-            fs.writeFileSync(envStig,
-                "# AIuda™ PUML — API-nycklar\n" +
-                "# Fyll i dina nycklar och starta om appen.\n\n" +
-                "ANTHROPIC_API_KEY=sk-ant-\n\n" +
-                "# OPENAI_API_KEY=sk-\n",
-                "utf8"
-            );
-        }
-
-        const öppna = process.platform === "win32" ? "cmd"
-                    : process.platform === "darwin" ? "open"
-                    : "xdg-open";
-        const args  = process.platform === "win32" ? ["/c", "start", "", envStig] : [envStig];
-        execFile(öppna, args, (fel) => {
-            if (fel) förkasta(fel);
-            else lös({ ok: true, stig: envStig });
-        });
-    });
+// ── IPC: spara en API-nyckel krypterat (Electron safeStorage / OS-nyckelring) ──
+ipcMain.handle("spara-api-nyckel", (_händelse, { provider, nyckel }) => {
+    if (!safeStorage.isEncryptionAvailable()) {
+        return { fel: "Säker nyckellagring är inte tillgänglig på den här plattformen." };
+    }
+    const namn = provider === "openai" ? "OPENAI_API_KEY" : "ANTHROPIC_API_KEY";
+    sparaApiNyckel(namn, (nyckel || "").trim());
+    return { ok: true };
 });
 
 // ── Öppna fil via native dialog ──
@@ -432,6 +476,8 @@ function createWindow() {
 
 // ── App-livscykel ──
 app.whenReady().then(() => {
+    migreraEnvTillSafeStorage();
+
     app.setAboutPanelOptions({
         applicationName:    "AIuda PUML",
         applicationVersion: app.getVersion(),

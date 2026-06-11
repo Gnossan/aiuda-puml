@@ -21,7 +21,7 @@ PlantUML-editor som skrivbordsapp med inbyggd AI-assistent och export till draw.
 Appen körs helt lokalt utan externa beroenden vid runtime:
 
 - **PlantUML-rendering** sker via Java-pipe direkt i Electron-processen
-- **AI-anrop** proxyas till Anthropic / OpenAI via Electron IPC — API-nycklar stannar lokalt i `.env`
+- **AI-anrop** proxyas till Anthropic / OpenAI via Electron IPC — API-nycklar lagras krypterat lokalt med Electrons `safeStorage` (OS-nyckelring)
 - **draw.io-konvertering** tolkar PUML-källkod direkt, ingen server behövs
 
 ## Krav
@@ -53,18 +53,14 @@ bash scripts/build-jre.sh
 
 För AI-funktionen behövs en nyckel från [Anthropic](https://console.anthropic.com) och/eller [OpenAI](https://platform.openai.com).
 
-Klicka på **⚙ → Öppna .env** i appen, fyll i nyckeln och starta om.
+Klicka på **⚙** i appen, fyll i nyckeln/nycklarna och klicka **Spara**. Nycklarna
+krypteras med Electrons `safeStorage`-API (OS-nyckelring) och lagras i
+`~/Library/Application Support/aiuda-puml/api-nycklar.json`.
 
-Eller skapa filen manuellt:
-
-```
-~/Library/Application Support/aiuda-puml/.env
-```
-
-```env
-ANTHROPIC_API_KEY=sk-ant-...
-# OPENAI_API_KEY=sk-...
-```
+> Tidigare versioner lagrade nycklar i klartext i en `.env`-fil. Vid första
+> uppstart efter uppdatering migreras eventuella nycklar i den filen
+> automatiskt till den krypterade lagringen, och `.env` byts namn till
+> `.env.migrerad`.
 
 ## Starta
 

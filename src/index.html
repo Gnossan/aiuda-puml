@@ -491,12 +491,20 @@
             <div id="ai-nyckel-status" style="font-size:11px;color:#888;line-height:1.5;padding:4px 2px;">
                 <!-- uppdateras av JS -->
             </div>
+            <div class="ai-inst-rad">
+                <label for="ai-nyckel-anthropic">Anthropic-nyckel</label>
+                <input type="password" id="ai-nyckel-anthropic" placeholder="sk-ant-…" autocomplete="off">
+            </div>
+            <div class="ai-inst-rad">
+                <label for="ai-nyckel-openai">OpenAI-nyckel</label>
+                <input type="password" id="ai-nyckel-openai" placeholder="sk-…" autocomplete="off">
+            </div>
             <div style="display:flex;gap:6px;align-items:center;margin-top:4px;">
                 <button id="ai-spara-inst">Spara</button>
-                <button id="ai-oppna-env" title="Skapa/öppna .env i texteditor">📝 Öppna .env</button>
             </div>
             <p style="font-size:10px;color:#666;margin:4px 0 0;line-height:1.5;">
-                API-nycklar konfigureras i <code style="color:#888;">.env</code>-filen (öppna med knappen ovan).
+                Nycklarna lagras krypterat på din dator (Electron <code style="color:#888;">safeStorage</code>)
+                och lämnar aldrig appen, förutom i anropet till respektive AI-leverantör.
             </p>
         </div>
 
