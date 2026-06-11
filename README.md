@@ -2,7 +2,7 @@
 
 PlantUML-editor som skrivbordsapp med inbyggd AI-assistent och export till draw.io.
 
-![Version](https://img.shields.io/badge/version-1.2.11-blue)
+![Version](https://img.shields.io/badge/version-1.2.12-blue)
 ![Electron](https://img.shields.io/badge/Electron-35-47848F?logo=electron)
 ![PlantUML](https://img.shields.io/badge/PlantUML-bundled-orange)
 ![License](https://img.shields.io/badge/license-GPL%20v2-green)
