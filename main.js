@@ -11,6 +11,21 @@ const { autoUpdater } = require("electron-updater");
 autoUpdater.autoDownload    = false;
 autoUpdater.autoInstallOnAppQuit = true;
 
+// Enkel filloggning för autoUpdater — gör det möjligt att felsöka
+// uppdateringar i den paketerade appen (ingen synlig konsol där).
+function skrivUppdateringsLogg(nivå, ...delar) {
+    const rad = `[${new Date().toISOString()}] [${nivå}] ${delar.map(String).join(" ")}\n`;
+    try {
+        fs.appendFileSync(path.join(app.getPath("userData"), "update.log"), rad);
+    } catch { /* ignorera loggfel */ }
+}
+autoUpdater.logger = {
+    info:  (...a) => skrivUppdateringsLogg("info", ...a),
+    warn:  (...a) => skrivUppdateringsLogg("warn", ...a),
+    error: (...a) => skrivUppdateringsLogg("error", ...a),
+    debug: (...a) => skrivUppdateringsLogg("debug", ...a),
+};
+
 // ── Sökvägar ── (fungerar både i dev och paketerad app)
 const isDev       = !app.isPackaged;
 const resDir      = isDev
@@ -355,6 +370,10 @@ autoUpdater.on("update-downloaded", (info) => {
     }).then(({ response }) => {
         if (response === 0) autoUpdater.quitAndInstall();
     });
+});
+
+autoUpdater.on("error", (err) => {
+    skrivUppdateringsLogg("error", "update-error:", err?.stack || err);
 });
 
 // ── Bygg native-meny ──
