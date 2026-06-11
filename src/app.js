@@ -1303,7 +1303,7 @@ async function skickaAiMeddelande(prompt) {
             aiChatt.pop(); // Ta bort användarmeddelandet
             renderaChatt();
             // Visa fel som ett assistent-meddelande
-            const felMsg = { role: "assistant", content: `⚠ Fel: ${data.fel || svar.status}` };
+            const felMsg = { role: "assistant", content: `⚠ Fel: ${data.fel}` };
             aiMeddelandenEl.appendChild(skapaMeddelandeEl(felMsg.role, felMsg.content));
             aiMeddelandenEl.scrollTop = aiMeddelandenEl.scrollHeight;
         } else {

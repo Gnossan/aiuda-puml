@@ -12,14 +12,7 @@
 const { slåUppKatalogpost } = require("./shape_katalog");
 const { CONTAINER_TYPER }   = require("./deployment_parser");
 const { läggUtDeploymentModell } = require("./deployment_layout");
-
-function xmlEscape(text) {
-    return String(text)
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;");
-}
+const { xmlEscape } = require("./xml_escape");
 
 // ---- Stilhantering (lokal kopia av xml.js:s hjälpfunktioner) ----
 // Vi kopierar dessa tre funktioner för att undvika att exportera internt

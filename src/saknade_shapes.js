@@ -13,14 +13,7 @@
 
 const { TYP } = require("./parser");
 const { slåUppKatalogpost, STATUS } = require("./shape_katalog");
-
-function xmlEscape(text) {
-    return String(text)
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;");
-}
+const { xmlEscape } = require("./xml_escape");
 
 // Mappar en parser-TYP till den typnyckel som shape_katalog.js använder.
 // (För TYP-värdena råkar de redan vara identiska strängar — men vi håller

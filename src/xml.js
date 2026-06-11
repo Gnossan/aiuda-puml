@@ -7,14 +7,7 @@
 
 const { TYP } = require("./parser");
 const { slåUppKatalogpost } = require("./shape_katalog");
-
-function xmlEscape(text) {
-    return String(text)
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;");
-}
+const { xmlEscape } = require("./xml_escape");
 
 // Reservfärger när varken katalogen eller skinparam ger besked —
 // håller diagrammet läsbart även för typer vi inte känner igen.

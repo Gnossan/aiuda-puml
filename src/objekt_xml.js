@@ -10,14 +10,7 @@
 "use strict";
 
 const { läggUtObjektModell, OBJEKT_BREDD, RUBRIK_HÖJD, FÄLT_HÖJD, AVDELARE_HÖJD } = require("./objekt_layout");
-
-function xmlEscape(text) {
-    return String(text)
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;");
-}
+const { xmlEscape } = require("./xml_escape");
 
 // Rubrikvärde: "<u>instansnamn : Klass</u>" (UML-konvention för objekt).
 // Tvåstegs-escaping: steg 1 skyddar namnen i HTML, steg 2 XML-escapar hela HTML-strängen.

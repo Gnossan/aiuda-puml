@@ -12,14 +12,7 @@
 "use strict";
 
 const { läggUtERModell, ENTITET_BREDD, RUBRIK_HÖJD, RAD_HÖJD, AVDELARE_HÖJD } = require("./er_layout");
-
-function xmlEscape(text) {
-    return String(text)
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;");
-}
+const { xmlEscape } = require("./xml_escape");
 
 // Mappar PlantUMLs kråkfot-symbol till drawio-pilnamn.
 // Symbolerna är de som dyker upp inuti parsern (vänsterCard/högerCard).

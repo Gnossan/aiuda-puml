@@ -4,13 +4,7 @@
 
 "use strict";
 
-function xmlEscape(t) {
-    return String(t)
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;");
-}
+const { xmlEscape } = require("./xml_escape");
 
 const NIVÅSTILAR = [
     // Rot (djup 1)

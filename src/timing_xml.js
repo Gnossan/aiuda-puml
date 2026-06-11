@@ -20,6 +20,8 @@
 
 "use strict";
 
+const { xmlEscape } = require("./xml_escape");
+
 // ---- Layout-konstanter ----
 const ETIKETT_BREDD  = 120;   // bredd för deltagaretiketten till vänster
 const RAD_HÖJD       = 50;    // höjd per deltagarrad
@@ -39,14 +41,6 @@ const FÄRGER = [
     { fill: "#f5f5f5", stroke: "#666666" },  // grå (Idle/default)
 ];
 const IDLE_FÄRG = { fill: "#f5f5f5", stroke: "#999999" };
-
-function xmlEscape(text) {
-    return String(text)
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;");
-}
 
 // Tilldela en färg per unikt tillståndsnamn
 function byggFärgMap(modell) {

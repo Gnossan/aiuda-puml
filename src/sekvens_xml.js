@@ -13,14 +13,7 @@
 
 const { slåUppKatalogpost } = require("./shape_katalog");
 const { HEADER_HÖJD } = require("./sekvens_layout");
-
-function xmlEscape(text) {
-    return String(text)
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;");
-}
+const { xmlEscape } = require("./xml_escape");
 
 function tolkaStilSträng(sträng) {
     const par = {};

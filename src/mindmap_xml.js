@@ -4,13 +4,7 @@
 
 "use strict";
 
-function xmlEscape(t) {
-    return String(t)
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;");
-}
+const { xmlEscape } = require("./xml_escape");
 
 // Stil per djupnivå (0-indexerat: index 0 = djup 1 = rot)
 const NIVÅSTILAR = [

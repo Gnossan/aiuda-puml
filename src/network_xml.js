@@ -8,13 +8,7 @@
 
 "use strict";
 
-function xmlEscape(t) {
-    return String(t)
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;");
-}
+const { xmlEscape } = require("./xml_escape");
 
 // draw.io-stilar per nodform
 const NODFORM_STIL = {

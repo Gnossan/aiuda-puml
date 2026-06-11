@@ -20,14 +20,7 @@ const {
     FACK_HÖJD,
     AVDELARE_HÖJD,
 } = require("./klass_layout");
-
-function xmlEscape(text) {
-    return String(text)
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;");
-}
+const { xmlEscape } = require("./xml_escape");
 
 // --- Klasshuvud: stereotyptext + namn i HTML ---
 //
