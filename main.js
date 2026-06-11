@@ -49,7 +49,6 @@ function hämtaEnvStig() {
         const devEnv = path.join(__dirname, "src", ".env");
         if (fs.existsSync(devEnv)) return devEnv;
     }
-    // Standard: userData/.env (skapas vid behov av oppna-env)
     return userEnv;
 }
 
